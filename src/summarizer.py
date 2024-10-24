@@ -1,4 +1,5 @@
 import os
+
 from transformers import pipeline
 import openai
 from anthropic import Anthropic
@@ -37,12 +38,11 @@ def generate_summary_hf(model_pipeline, prompt, **kwargs):
     return summary
 
 
-def generate_summary_openai(prompt, engine, max_tokens=100, **kwargs):
+def generate_summary_openai(prompt, engine, **kwargs):
     """Generate a summary using OpenAI's API."""
     response = openai.Completion.create(
         engine=engine,
         prompt=prompt,
-        max_tokens=max_tokens,
         n=1,
         stop=None,
         **kwargs
@@ -50,13 +50,12 @@ def generate_summary_openai(prompt, engine, max_tokens=100, **kwargs):
     return response.choices[0].text.strip()
 
 
-def generate_summary_claude(prompt, engine, max_tokens=100, **kwargs):
+def generate_summary_claude(prompt, engine, **kwargs):
     """Generate a summary using Claude's API."""
     anthropic = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     response = anthropic.completions.create(
         model=engine,
         prompt=prompt,
-        max_tokens=max_tokens,
         **kwargs
     )
     return response.completion.strip()

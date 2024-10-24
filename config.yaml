@@ -4,7 +4,7 @@ scraping:
   year: 2024
   track: Conference
   submission_type: tab-accept-oral
-  delay: 2
+  delay: 1
 
 paths:
   output_dir: data/downloaded_papers
@@ -13,7 +13,7 @@ paths:
 summarization:
   provider: hf
   model_name: facebook/opt-350m
-  prefix: "Summarize the following text:"
+  prefix: "Summarize the following paper:"
   suffix: "Summary:"
   param:
     max_new_tokens: 1000

@@ -1,14 +1,14 @@
-import re
 import argparse
 import os
+import re
 import time
+import yaml
 from tqdm import tqdm
 
-from pdf_scraper import scrape_openreview, download_pdf
 from pdf_parser import parse_and_clean_pdf
-from summarizer import summarize_text
+from pdf_scraper import download_pdf, scrape_openreview
 from sql import Database, Paper
-import yaml
+from summarizer import summarize_text
 
 
 def main():
