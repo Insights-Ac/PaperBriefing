@@ -15,7 +15,6 @@ class Paper(Base):
     year = Column(Integer)
     track = Column(String)
     submission_type = Column(String)
-    authors = Column(String)
     platform = Column(String)
 
     pdf_url = Column(String)

@@ -88,7 +88,7 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
     :param track: str, track name (e.g., 'Poster', 'Oral')
     :param submission_type: str, type of submission
     :param max_retries: int, maximum number of retries for failed operations
-    :return: list of tuples (paper_title, pdf_url, authors)
+    :return: list of tuples (paper_title, pdf_url)
     """
     base_url = f"https://openreview.net/group?id={conference}.cc/{year}/{track}"
     if submission_type is not None:
@@ -107,45 +107,61 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
             driver.get(base_url)
             
             papers = []
+            page_number = 1
             
-            # Wait for the content to load with increased timeout
-            print("Waiting for content to load...")
-            WebDriverWait(driver, 20).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "note"))
-            )
+            while True:
+                print(f"Processing page {page_number}")
+                # Wait for the content to load with increased timeout
+                print("Waiting for content to load...")
+                WebDriverWait(driver, 20).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "note"))
+                )
             
-            # Scroll to load all papers on the current page
-            print("Scrolling through page...")
-            last_height = driver.execute_script("return document.body.scrollHeight")
-            scroll_attempts = 0
-            max_scroll_attempts = 10
+                # Scroll to load all papers on the current page
+                print("Scrolling through page...")
+                last_height = driver.execute_script("return document.body.scrollHeight")
+                scroll_attempts = 0
+                max_scroll_attempts = 10
             
-            while scroll_attempts < max_scroll_attempts:
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(3)  # Increased wait time
-                new_height = driver.execute_script("return document.body.scrollHeight")
-                if new_height == last_height:
-                    break
-                last_height = new_height
-                scroll_attempts += 1
+                while scroll_attempts < max_scroll_attempts:
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(3)  # Increased wait time
+                    new_height = driver.execute_script("return document.body.scrollHeight")
+                    if new_height == last_height:
+                        break
+                    last_height = new_height
+                    scroll_attempts += 1
             
-            # Extract paper information
-            print("Extracting paper information...")
-            notes = driver.find_elements(By.CLASS_NAME, "note")
-            print(f"Found {len(notes)} papers")
+                # Extract paper information
+                print("Extracting paper information...")
+                notes = driver.find_elements(By.CLASS_NAME, "note")
             
-            for paper in notes:
+                for paper in notes:
+                    try:
+                        title = paper.find_element(By.TAG_NAME, "h4").text.strip()
+                        pdf_links = paper.find_elements(By.XPATH, ".//a[@title='Download PDF']")
+                        if pdf_links and len(title.strip()) > 0:
+                            pdf_url = pdf_links[0].get_attribute("href")
+                            papers.append((title, pdf_url))
+                            print(f"Found paper: {title}")
+                    except Exception as e:
+                        print(f"Error extracting paper info: {str(e)}")
+                        continue
+                
+                # Check if there's a next page
                 try:
-                    title = paper.find_element(By.TAG_NAME, "h4").text.strip()
-                    pdf_links = paper.find_elements(By.XPATH, ".//a[@title='Download PDF']")
-                    authors = paper.find_element(By.CLASS_NAME, "note-authors").text.strip()
-                    if pdf_links and len(title.strip()) > 0:
-                        pdf_url = pdf_links[0].get_attribute("href")
-                        papers.append((title, pdf_url, authors))
-                        print(f"Found paper: {title} by {authors}")
+                    next_button = driver.find_element(By.XPATH, "//li[contains(@class, 'right-arrow')]/a/span[text()='›']")
+                    if 'disabled' not in next_button.find_element(By.XPATH, "..").get_attribute('class'):
+                        print("Moving to the next page...")
+                        next_button.click()
+                        time.sleep(3)  # Wait for the next page to load
+                        page_number += 1
+                    else:
+                        print("Reached the last page.")
+                        break
                 except Exception as e:
-                    print(f"Error extracting paper info: {str(e)}")
-                    continue
+                    print("No more pages or error finding next button.")
+                    break
             
             return papers
             
@@ -164,6 +180,7 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
                     driver.quit()
                 except Exception as e:
                     print(f"Error closing driver: {str(e)}")
+
 
 def download_pdf(title, url, output_dir):
     """
@@ -191,8 +208,8 @@ if __name__ == "__main__":
     submission_type = "tab-accept-oral"
     
     papers = scrape_openreview(conference, year, track, submission_type)
-    print(papers)
-    
+    exit()
+
     output_dir = "data/downloaded_papers"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
