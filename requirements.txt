@@ -1,0 +1,13 @@
+packaging
+pdf2image
+pdfminer
+pillow
+pycryptodome
+PyPDF2
+pytesseract
+typing_extensions
+requests
+selenium
+webdriver-manager
+tqdm
+sqlalchemy
