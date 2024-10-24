@@ -18,7 +18,7 @@ def load_model(model_name):
     return pipeline("text-generation", model=model_name, device_map="auto")
 
 
-def generate_summary_hf(model_pipeline, prompt, max_tokens=100, **kwargs):
+def generate_summary_hf(model_pipeline, prompt, **kwargs):
     """
     Generate a summary using the loaded model pipeline.
     
@@ -30,7 +30,7 @@ def generate_summary_hf(model_pipeline, prompt, max_tokens=100, **kwargs):
     Returns:
     str: The generated summary.
     """
-    output = model_pipeline(prompt, max_new_tokens=max_tokens, **kwargs)
+    output = model_pipeline(prompt, **kwargs)
     generated_text = output[0]['generated_text']
     # Extract only the answer (summary) by removing the original prompt
     summary = generated_text[len(prompt):].strip()
@@ -62,7 +62,7 @@ def generate_summary_claude(prompt, engine, max_tokens=100, **kwargs):
     return response.completion.strip()
 
 
-def summarize_text(text, provider, model_name, **kwargs):
+def summarize_text(prefix, suffix, text, provider, model_name, **kwargs):
     """
     Main function to summarize text using a specified model or API.
     
@@ -75,7 +75,7 @@ def summarize_text(text, provider, model_name, **kwargs):
     Returns:
     str: The generated summary.
     """
-    prompt = f"Summarize the following text:\n\n{text}\n\nSummary:"
+    prompt = f"{prefix}\n\n{text}\n\n{suffix}"
     
     if provider.lower() == "openai":
         return generate_summary_openai(prompt, model_name, **kwargs)

@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from pdf_scraper import scrape_openreview, download_pdf
 from pdf_parser import parse_and_clean_pdf
+from summarizer import summarize_text
 from sql import Database, Paper
 import yaml
 
@@ -59,6 +60,12 @@ def main():
         
         # Parse and clean PDF
         content = parse_and_clean_pdf(pdf_path)
+
+        # Summarize the content.
+        provider = config['summarization']['provider']
+        model_name = config['summarization']['model_name']
+        summary = summarize_text(config['summarization']['prefix'], config['summarization']['suffix'], 
+                                 content, provider, model_name, **config['summarization']['param'])
         
         # Create a new Paper entry
         # Preprocess the title to create a valid ID
@@ -66,6 +73,7 @@ def main():
         processed_id = re.sub(r'[^\w\-_\.]', '', processed_id)  # Remove any other non-alphanumeric characters
         processed_title = processed_id
         processed_id = processed_id.replace(' ', '_')  # Replace spaces with underscores
+        processed_id = f'{processed_id}_{conference}_{year}_{track}_{submission_type}_{platform}'
         
         paper_entry = Paper(
             id=processed_id,
@@ -77,7 +85,8 @@ def main():
             platform=platform,
             pdf_url=url,
             pdf_path=pdf_path,
-            content=content
+            content=content,
+            summary=summary
         )
         
         # Add entry to the database
