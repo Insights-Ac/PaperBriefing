@@ -1,3 +1,4 @@
+torch
 packaging
 pdf2image
 pdfminer
@@ -11,3 +12,7 @@ selenium
 webdriver-manager
 tqdm
 sqlalchemy
+PyYAML
+transformers
+openai
+anthropic

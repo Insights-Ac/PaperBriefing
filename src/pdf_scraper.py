@@ -199,20 +199,3 @@ def download_pdf(title, url, output_dir):
         return filepath
     else:
         return None
-
-
-if __name__ == "__main__":
-    conference = "ICLR"
-    year = 2024
-    track = "Conference"
-    submission_type = "tab-accept-oral"
-    
-    papers = scrape_openreview(conference, year, track, submission_type)
-    exit()
-
-    output_dir = "data/downloaded_papers"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    for title, url in tqdm(papers, desc="Downloading papers"):
-        download_pdf(title, url, output_dir)
-        time.sleep(1)  # Add a delay to avoid overwhelming the server

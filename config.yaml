@@ -1,0 +1,11 @@
+scraping:
+  platform: OpenReview
+  conference: ICLR
+  year: 2024
+  track: Conference
+  submission_type: tab-accept-oral
+  delay: 2
+
+paths:
+  output_dir: data/downloaded_papers
+  db_path: sqlite:///data/papers.db

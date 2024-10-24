@@ -77,10 +77,3 @@ def parse_and_clean_pdf(pdf_path):
     raw_text = parse_pdf(pdf_path)
     cleaned_text = clean_text(raw_text)
     return cleaned_text
-
-
-if __name__ == "__main__":
-    # Normal PDF
-    print(parse_and_clean_pdf("sample/self-attentive-hawkes-process.pdf"))
-    # Scanned PDF
-    print(parse_and_clean_pdf("sample/mixture-density-network.pdf"))

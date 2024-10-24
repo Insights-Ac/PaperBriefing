@@ -65,12 +65,3 @@ class Database:
             session.delete(paper)
             session.commit()
         session.close()
-
-# Usage example:
-# db = Database('sqlite:///example.db')
-# db.create_tables()
-# db.add_entry('Test Title', 'Test Content')
-# entries = db.get_entries()
-# db.update_entry(1, {'title': 'Updated Title'})
-# db.delete_entry(1)
-
