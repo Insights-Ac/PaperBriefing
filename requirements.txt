@@ -14,5 +14,6 @@ tqdm
 sqlalchemy
 PyYAML
 transformers
+accelerate
 openai
 anthropic

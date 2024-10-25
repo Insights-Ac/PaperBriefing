@@ -71,6 +71,7 @@ def clean_text(text):
     text = ''.join(char for char in text if ord(char) < 128)
     return text
 
+
 def parse_and_clean_pdf(pdf_path):
     """
     Parse a PDF file, clean the extracted text, and save it to a txt file.

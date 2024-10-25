@@ -15,5 +15,8 @@ summarization:
   model_name: facebook/opt-350m
   prefix: "Summarize the following paper in one concise paragraph:"
   suffix: "Summary:"
+  content_cap: 1000
   param:
-    max_tokens: 1000
+    max_new_tokens: 1000
+    do_sample: true
+    temperature: 0.7

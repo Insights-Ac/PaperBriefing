@@ -41,7 +41,7 @@ pip install -r requirements.txt
 I recommend using some form of virtual environment to manage the dependencies. You can find the definition file for building a Singularity container in `pubsum.def`, which is the tool I use to run the code. To build the container, run:
 
 ```bash
-singularity build pubsum.sif pubsum.def
+singularity build --nv --fakeroot pubsum.sif pubsum.def
 ```
 
 ## Usage
@@ -76,10 +76,11 @@ paths:
 summarization:
   provider: hf
   model_name: facebook/opt-350m
-  prefix: "Summarize the following paper:"
+  prefix: "Summarize the following paper in one concise paragraph:"
   suffix: "Summary:"
   param:
     max_new_tokens: 1000
+    do_sample: true
     temperature: 0.7
 ```
 
@@ -114,10 +115,22 @@ summarization:
     temperature: 0.7
 ```
 
-And you also want to specific your OpenAI API key in your environment variables.
+Similarly, if you want to use Anthropic, you can change the `summarization` section in the configuration file to:
+
+```yaml
+summarization:
+  provider: anthropic
+  model_name: claude-3-5-sonnet-20241022
+  param:
+    max_tokens: 1000
+    temperature: 0.7
+```
+
+And you also want to specific your OpenAI and Anthropic API keys in your environment variables.
 
 ```bash
 export OPENAI_API_KEY=<your-openai-api-key>
+export ANTHROPIC_API_KEY=<your-anthropic-api-key>
 ```
 
 > **Note:** Using paid API calls from OpenAI or Anthropic will be expensive, especially if you want to summarize thousands of papers. If you have access to "free" computational resources, you might want to use open-sourced models from HuggingFace to save costs.

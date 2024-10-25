@@ -58,13 +58,15 @@ def main():
             continue
         
         # Download PDF
-        pdf_path = download_pdf(processed_id, url, output_dir)
+        pdf_path = download_pdf(f'{processed_id}.pdf', url, output_dir)
         if not pdf_path:
             print(f"Failed to download {title}.")
             continue
         
         # Parse and clean PDF
         content = parse_and_clean_pdf(pdf_path)
+        if config['summarization']['content_cap']:
+            content = content[:config['summarization']['content_cap']]
 
         # Summarize the content.
         provider = config['summarization']['provider']
