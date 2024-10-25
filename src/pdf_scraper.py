@@ -15,12 +15,12 @@ from webdriver_manager.firefox import GeckoDriverManager
 
 def check_firefox_installation():
     """
-    Check Firefox installation and print debug information.
+    Check Firefox ESR installation and print debug information.
     """
     try:
-        # Check Firefox version
-        firefox_version = subprocess.check_output(['firefox', '--version']).decode().strip()
-        print(f"Firefox version: {firefox_version}")
+        # Check Firefox ESR version
+        firefox_version = subprocess.check_output(['firefox-esr', '--version']).decode().strip()
+        print(f"Firefox ESR version: {firefox_version}")
         
         # Check geckodriver
         driver_path = GeckoDriverManager().install()
@@ -28,19 +28,19 @@ def check_firefox_installation():
         
         return True
     except FileNotFoundError:
-        print("Firefox is not installed or not in PATH")
+        print("Firefox ESR is not installed or not in PATH")
         return False
     except Exception as e:
-        print(f"Error checking Firefox installation: {e}")
+        print(f"Error checking Firefox ESR installation: {e}")
         return False
 
 
 def setup_firefox_driver():
     """
-    Set up Firefox driver with appropriate options for Debian Linux.
+    Set up Firefox driver with appropriate options for Debian Linux using Firefox ESR.
     """
     if not check_firefox_installation():
-        raise Exception("Firefox is not properly installed. Please install Firefox first.")
+        raise Exception("Firefox ESR is not properly installed. Please install Firefox ESR first.")
 
     options = FirefoxOptions()
     
@@ -59,8 +59,11 @@ def setup_firefox_driver():
     # Reduce memory usage
     options.set_preference('browser.sessionhistory.max_entries', 10)
     
+    # Set the binary location to Firefox ESR
+    options.binary_location = '/usr/bin/firefox-esr'
+    
     try:
-        print("Setting up Firefox driver...")
+        print("Setting up Firefox ESR driver...")
         service = FirefoxService(
             GeckoDriverManager().install(),
             log_output=os.path.devnull  # Suppress Geckodriver logs
@@ -70,10 +73,10 @@ def setup_firefox_driver():
             service=service,
             options=options
         )
-        print("Firefox driver successfully initialized")
+        print("Firefox ESR driver successfully initialized")
         return driver
     except Exception as e:
-        print(f"Failed to initialize Firefox driver: {str(e)}")
+        print(f"Failed to initialize Firefox ESR driver: {str(e)}")
         print(f"System platform: {sys.platform}")
         print(f"Python version: {sys.version}")
         raise
@@ -182,7 +185,7 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
                     print(f"Error closing driver: {str(e)}")
 
 
-def download_pdf(title, url, output_dir):
+def download_pdf(filename, url, output_dir):
     """
     Download a PDF file and save it to the specified directory.
     
@@ -192,7 +195,6 @@ def download_pdf(title, url, output_dir):
     """
     response = requests.get(url)
     if response.status_code == 200:
-        filename = f"{title.replace(' ', '_')}.pdf"
         filepath = os.path.join(output_dir, filename)
         with open(filepath, 'wb') as f:
             f.write(response.content)

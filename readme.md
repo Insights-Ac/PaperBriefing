@@ -1,6 +1,6 @@
 # PubSummarizer
 
-The Publication Summarizer is a tool designed to scrape, parse, and summarize academic papers from conferences. This tool downloads PDFs, extracts text, and generates summaries using various language models.
+The Publication Summarizer is a tool designed to scrape, parse, and summarize academic papers from conferences and journals. This tool downloads the PDFs of papers, extracts text, and generates summaries using various language models.
 
 The idea behind this project is to enable a quick review of all the accepted papers from a conference to find papers that are potentially interesting for you to read. Seeing that the number of accepted papers grows so fast, this task is becoming increasingly difficult to do manually.
 
@@ -26,10 +26,10 @@ The `Database` module (implemented in `sql.py`) provides a simple interface for 
 
 ## Installation
 
-The project requires Python and several libraries. Specifically, the `Scraper` module requires a Firefox browser to be installed, and the `Parser` module requires a `tesseract-ocr` module to be installed. On a Debian-based system, you can install these dependencies using:
+The project requires Python and several libraries. Specifically, the `Scraper` module requires a Firefox ESR browser to be installed, and the `Parser` module requires a `tesseract-ocr` module to be installed. On a Debian-based system, you can install these dependencies using:
 
 ```bash
-sudo apt install tesseract-ocr firefox -y
+sudo apt install tesseract-ocr firefox-esr -y
 ```
 
 You can then install the required Python packages using the `requirements.txt` file:
@@ -143,5 +143,7 @@ Currently, this tool is in a very early stage of development. Here are some of t
 - [ ] Add a web interface for easier access to the results and potentially to fully control the whole process.
 - [ ] Add a way to filter the papers based on keywords, titles, etc.
 - [ ] Explore more advanced prompts and procedures for more comprehensive summaries.
+
+While it might seem feasible to summarize all papers from major conferences and journals and release the results as a static website, there are still valuable use cases for customizing the tool yourself. This allows you to use different models and prompts to achieve the most suitable results for your needs. Additionally, I cannot fully account for the vast diversity of conferences and journals. In the future, an interactive summarization module might be implemented, enabling you to chat with the LLM to refine the results. At that point, hosting a dynamic website for everyone to interact with would be impractical for me.
 
 If you have any ideas or suggestions on the future work, or you find some bugs, feel free to let me know by opening an issue or send me an email. My contact information can be found on my [homepage](https://www.yanlincs.com).

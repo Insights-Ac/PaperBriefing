@@ -1,7 +1,6 @@
-import os
-
+import torch
 from transformers import pipeline
-import openai
+from openai import OpenAI
 from anthropic import Anthropic
 
 
@@ -16,7 +15,7 @@ def load_model(model_name):
     Returns:
     pipeline: The loaded model pipeline for text generation.
     """
-    return pipeline("text-generation", model=model_name, device_map="auto")
+    return pipeline("text-generation", model=model_name, device="cuda" if torch.cuda.is_available() else "cpu")
 
 
 def generate_summary_hf(model_pipeline, prompt, **kwargs):
@@ -40,25 +39,24 @@ def generate_summary_hf(model_pipeline, prompt, **kwargs):
 
 def generate_summary_openai(prompt, engine, **kwargs):
     """Generate a summary using OpenAI's API."""
-    response = openai.Completion.create(
-        engine=engine,
-        prompt=prompt,
-        n=1,
-        stop=None,
+    openai = OpenAI()
+    chat_completion = openai.chat.completions.create(
+        model=engine,
+        messages=[{"role": "user", "content": prompt}],
         **kwargs
     )
-    return response.choices[0].text.strip()
+    return chat_completion.choices[0].message.content.strip()
 
 
 def generate_summary_claude(prompt, engine, **kwargs):
     """Generate a summary using Claude's API."""
-    anthropic = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    response = anthropic.completions.create(
+    anthropic = Anthropic()
+    response = anthropic.messages.create(
         model=engine,
-        prompt=prompt,
+        messages=[{"role": "user", "content": prompt}],
         **kwargs
     )
-    return response.completion.strip()
+    return response.content[0].text.strip()
 
 
 def summarize_text(prefix, suffix, text, provider, model_name, **kwargs):

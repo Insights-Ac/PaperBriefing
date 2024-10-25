@@ -57,17 +57,19 @@ def parse_pdf(pdf_path):
 
 def clean_text(text):
     """
-    Clean the extracted text by removing extra whitespace and joining hyphenated words.
+    Clean the extracted text by removing extra whitespace, joining hyphenated words,
+    and removing non-UTF-8 characters.
     
     :param text: str, input text to clean
     :return: str, cleaned text
     """
-    text = re.sub(r'<latexit[^>]*>(.*?)</latexit>', '', text)
+    # Remove extra whitespace
     text = ' '.join(text.split())
+    # Join hyphenated words
     text = re.sub(r'(\w+)-\s*\s*(\w+)', r'\1\2', text)
-
+    # Remove non-UTF-8 characters
+    text = ''.join(char for char in text if ord(char) < 128)
     return text
-
 
 def parse_and_clean_pdf(pdf_path):
     """

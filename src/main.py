@@ -5,7 +5,7 @@ import time
 import yaml
 from tqdm import tqdm
 
-from pdf_parser import parse_and_clean_pdf
+from pdf_parser import parse_and_clean_pdf, clean_text
 from pdf_scraper import download_pdf, scrape_openreview
 from sql import Database, Paper
 from summarizer import summarize_text
@@ -46,14 +46,19 @@ def main():
     
     # Process each paper
     for title, url in tqdm(papers, desc="Processing papers"):
+        # Preprocess the title to create a valid ID
+        processed_id = clean_text(title)  # Remove non-ASCII characters
+        processed_title = processed_id
+        processed_id = f'{processed_id.replace(" ", "_")}_{conference}_{year}_{track}_{submission_type}_{platform}'
+
         # Check if the paper already exists in the database
-        existing_papers = db.get_papers(filters={'title': title, 'conference': conference, 'year': year, 'track': track})
-        if existing_papers and existing_papers[0].content:
+        existing_papers = db.get_papers(filters={'id': processed_id})
+        if existing_papers and existing_papers[0].summary:
             print(f"Skipping {title}, already processed.")
             continue
         
         # Download PDF
-        pdf_path = download_pdf(title, url, output_dir)
+        pdf_path = download_pdf(processed_id, url, output_dir)
         if not pdf_path:
             print(f"Failed to download {title}.")
             continue
@@ -68,13 +73,6 @@ def main():
                                  content, provider, model_name, **config['summarization']['param'])
         
         # Create a new Paper entry
-        # Preprocess the title to create a valid ID
-        processed_id = ''.join(char for char in title if ord(char) < 128)  # Remove non-ASCII characters
-        processed_id = re.sub(r'[^\w\-_\.]', '', processed_id)  # Remove any other non-alphanumeric characters
-        processed_title = processed_id
-        processed_id = processed_id.replace(' ', '_')  # Replace spaces with underscores
-        processed_id = f'{processed_id}_{conference}_{year}_{track}_{submission_type}_{platform}'
-        
         paper_entry = Paper(
             id=processed_id,
             title=processed_title,
@@ -94,6 +92,8 @@ def main():
         
         # Delay to avoid overwhelming the server
         time.sleep(config['scraping']['delay'])
+
+    print("All papers processed.")
 
 
 if __name__ == "__main__":
