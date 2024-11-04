@@ -1,0 +1,22 @@
+scraping:
+  platform: txt
+  filters:
+    file_path: data/paper_urls.txt
+  # num_cap: 1
+  enforce_rescrape: false
+  cap_at: "REFERENCES"
+  delay: 1
+
+paths:
+  output_dir: data/downloaded_papers/txt
+  db_path: sqlite:///data/txt.db
+
+summarization:
+  provider: openai
+  model_name: gpt-4o-mini
+  prefix: "Summarize the following academic paper, and output your summary in the following format: [Topics:] <five keywords describing the main topics of the paper, with commas separating them and relevance descending> [Summary:] <summary as one concise paragraph>"
+  suffix: ""
+  content_cap: null
+  param:
+    max_tokens: 1000
+    temperature: 0.7

@@ -11,6 +11,7 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
 def check_firefox_installation():
@@ -94,7 +95,7 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
     :param num_cap: int, maximum number of papers to scrape
     :return: list of tuples (paper_title, pdf_url)
     """
-    base_url = f"https://openreview.net/group?id={conference}.cc/{year}/{track}"
+    base_url = f"https://openreview.net/group?id={conference}/{year}/{track}"
     if submission_type is not None:
         base_url += f"#{submission_type}"
     
@@ -158,16 +159,13 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
                     except Exception as e:
                         print(f"Error extracting paper info: {str(e)}")
                         continue
+
+                # Store current page papers for comparison
+                current_page_titles = [note.find_element(By.TAG_NAME, "h4").text.strip() 
+                                       for note in notes]
                 
                 # Check if there's a next page
                 try:
-                    # First check if we're on a disabled last page
-                    disabled_button = driver.find_elements(By.XPATH, "//li[contains(@class, 'right-arrow') and contains(@class, 'disabled')]")
-                    if disabled_button:
-                        print("Reached the last page.", flush=True)
-                        break
-
-                    # If not disabled, proceed with finding and clicking the next button
                     next_button = driver.find_element(By.XPATH, "//li[contains(@class, 'right-arrow')]/a/span[text()='›']")
                     print("Moving to the next page...", flush=True)
                     # Scroll the button into view using JavaScript
@@ -176,6 +174,16 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
                     time.sleep(1)
                     driver.execute_script("arguments[0].click();", next_button)
                     time.sleep(3)  # Wait for the next page to load
+
+                    # Check if we're still on the same page by comparing paper titles
+                    new_notes = driver.find_elements(By.CLASS_NAME, "note")
+                    new_page_titles = [note.find_element(By.TAG_NAME, "h4").text.strip() 
+                                     for note in new_notes]
+                    
+                    if current_page_titles == new_page_titles:
+                        print("Reached the last page (detected by content comparison)", flush=True)
+                        break
+                    
                     page_number += 1
                 except Exception as e:
                     print(f"Navigation error: {e}", flush=True)
@@ -209,11 +217,54 @@ def download_pdf(filename, url, output_dir):
     :param url: str, URL of the PDF
     :param output_dir: str, directory to save the PDF
     """
-    response = requests.get(url)
-    if response.status_code == 200:
+    @retry(
+        retry=retry_if_exception_type(Exception),
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5)
+    )
+    def _download_with_retry():
+        response = requests.get(url)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download PDF: HTTP {response.status_code}")
         filepath = os.path.join(output_dir, filename)
         with open(filepath, 'wb') as f:
             f.write(response.content)
         return filepath
-    else:
+
+    try:
+        return _download_with_retry()
+    except Exception as e:
+        print(f"Failed to download after retries: {str(e)}")
         return None
+
+
+def scrape_from_txt(file_path):
+    """
+    Scrape PDFs from URLs listed in a text file.
+    Each line in the text file should contain a PDF URL.
+    
+    :param file_path: str, path to the text file containing PDF URLs
+    :return: list of tuples (paper_id, title, pdf_url)
+    """
+    papers = []
+    
+    try:
+        with open(file_path, 'r') as file:
+            for line_number, line in enumerate(file, 1):
+                pdf_url = line.strip()
+                if pdf_url:
+                    # Generate a unique paper ID using line number since we might not have titles
+                    paper_id = f'paper_{line_number}_{pdf_url}'
+                    # Use the URL as a placeholder title since we can't extract it without downloading
+                    title = f"Paper from {pdf_url}"
+                    papers.append((paper_id, title, pdf_url))
+                    print(f"Found paper URL: {pdf_url}")
+                else:
+                    print(f"Skipping invalid URL at line {line_number}: {pdf_url}")
+        
+        print(f"Successfully loaded {len(papers)} paper URLs from {file_path}")
+        return papers
+        
+    except Exception as e:
+        print(f"Error reading file {file_path}: {str(e)}")
+        raise

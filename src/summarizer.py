@@ -43,7 +43,7 @@ def generate_summary_openai(prompt, engine, **kwargs):
     openai = OpenAI()
     
     @retry(
-        retry=retry_if_exception_type(openai.error.RateLimitError),
+        retry=retry_if_exception_type(Exception),
         wait=wait_exponential(multiplier=1, min=4, max=60),
         stop=stop_after_attempt(5)
     )
@@ -63,7 +63,7 @@ def generate_summary_claude(prompt, engine, **kwargs):
     anthropic = Anthropic()
     
     @retry(
-        retry=retry_if_exception_type(anthropic.RateLimitError),
+        retry=retry_if_exception_type(Exception),
         wait=wait_exponential(multiplier=1, min=4, max=60),
         stop=stop_after_attempt(5)
     )
