@@ -82,7 +82,7 @@ def setup_firefox_driver():
         raise
 
 
-def scrape_openreview(conference, year, track, submission_type=None, max_retries=3):
+def scrape_openreview(conference, year, track, submission_type=None, max_retries=3, num_cap=None):
     """
     Scrape OpenReview for PDFs based on given parameters using Selenium with Firefox.
     
@@ -91,6 +91,7 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
     :param track: str, track name (e.g., 'Poster', 'Oral')
     :param submission_type: str, type of submission
     :param max_retries: int, maximum number of retries for failed operations
+    :param num_cap: int, maximum number of papers to scrape
     :return: list of tuples (paper_title, pdf_url)
     """
     base_url = f"https://openreview.net/group?id={conference}.cc/{year}/{track}"
@@ -145,8 +146,15 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
                         pdf_links = paper.find_elements(By.XPATH, ".//a[@title='Download PDF']")
                         if pdf_links and len(title.strip()) > 0:
                             pdf_url = pdf_links[0].get_attribute("href")
-                            papers.append((title, pdf_url))
+                            paper_id = f'{title}_{conference}_{year}_{track}_{submission_type}'
+                            papers.append((paper_id, title, pdf_url))
                             print(f"Found paper: {title}")
+                            
+                            # Check if we've reached the num_cap
+                            if num_cap is not None and len(papers) >= num_cap:
+                                print(f"Reached paper cap of {num_cap}")
+                                return papers
+                                
                     except Exception as e:
                         print(f"Error extracting paper info: {str(e)}")
                         continue

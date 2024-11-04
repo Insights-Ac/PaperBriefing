@@ -1,9 +1,13 @@
 scraping:
   platform: OpenReview
-  conference: ICLR
-  year: 2024
-  track: Conference
-  submission_type: tab-accept-oral
+  filters:
+    conference: ICLR
+    year: 2024
+    track: Conference
+    submission_type: tab-accept-oral
+  # num_cap: 1
+  enforce_rescrape: false
+  cap_at: "REFERENCES"
   delay: 1
 
 paths:
@@ -11,12 +15,11 @@ paths:
   db_path: sqlite:///data/papers.db
 
 summarization:
-  provider: hf
-  model_name: facebook/opt-350m
-  prefix: "Summarize the following paper in one concise paragraph:"
-  suffix: "Summary:"
-  content_cap: 1000
+  provider: openai
+  model_name: gpt-4o-mini
+  prefix: "Summarize the following academic paper, and output your summary in the following format: [Topics:] <five keywords describing the main topics of the paper, with commas separating them and relevance descending> [Summary:] <summary as one concise paragraph>"
+  suffix: ""
+  content_cap: null
   param:
-    max_new_tokens: 1000
-    do_sample: true
+    max_tokens: 1000
     temperature: 0.7

@@ -2,6 +2,7 @@ import torch
 from transformers import pipeline
 from openai import OpenAI
 from anthropic import Anthropic
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
 def load_model(model_name):
@@ -38,26 +39,43 @@ def generate_summary_hf(model_pipeline, prompt, **kwargs):
 
 
 def generate_summary_openai(prompt, engine, **kwargs):
-    """Generate a summary using OpenAI's API."""
+    """Generate a summary using OpenAI's API with retry logic for rate limits."""
     openai = OpenAI()
-    chat_completion = openai.chat.completions.create(
-        model=engine,
-        messages=[{"role": "user", "content": prompt}],
-        **kwargs
+    
+    @retry(
+        retry=retry_if_exception_type(openai.error.RateLimitError),
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5)
     )
-    return chat_completion.choices[0].message.content.strip()
+    def _generate_with_retry():
+        chat_completion = openai.chat.completions.create(
+            model=engine,
+            messages=[{"role": "user", "content": prompt}],
+            **kwargs
+        )
+        return chat_completion.choices[0].message.content.strip()
+        
+    return _generate_with_retry()
 
 
 def generate_summary_claude(prompt, engine, **kwargs):
-    """Generate a summary using Claude's API."""
+    """Generate a summary using Claude's API with retry logic for rate limits."""
     anthropic = Anthropic()
-    response = anthropic.messages.create(
-        model=engine,
-        messages=[{"role": "user", "content": prompt}],
-        **kwargs
+    
+    @retry(
+        retry=retry_if_exception_type(anthropic.RateLimitError),
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5)
     )
-    return response.content[0].text.strip()
-
+    def _generate_with_retry():
+        response = anthropic.messages.create(
+            model=engine,
+            messages=[{"role": "user", "content": prompt}],
+            **kwargs
+        )
+        return response.content[0].text.strip()
+        
+    return _generate_with_retry()
 
 def summarize_text(prefix, suffix, text, provider, model_name, **kwargs):
     """

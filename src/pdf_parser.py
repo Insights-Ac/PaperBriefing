@@ -69,16 +69,19 @@ def clean_text(text):
     text = re.sub(r'(\w+)-\s*\s*(\w+)', r'\1\2', text)
     # Remove non-UTF-8 characters
     text = ''.join(char for char in text if ord(char) < 128)
+        
     return text
 
-
-def parse_and_clean_pdf(pdf_path):
+def parse_and_clean_pdf(pdf_path, cap_at=None):
     """
-    Parse a PDF file, clean the extracted text, and save it to a txt file.
+    Parse a PDF file, clean the extracted text, and optionally cap it at the specified text.
     
     :param pdf_path: str, path to the PDF file
-    :return: str, path to the saved txt file
+    :param cap_at: str, optional text that marks start of references section
+    :return: str, cleaned text
     """
     raw_text = parse_pdf(pdf_path)
     cleaned_text = clean_text(raw_text)
+    if cap_at and cap_at in cleaned_text:
+        cleaned_text = cleaned_text[:cleaned_text.index(cap_at)]
     return cleaned_text

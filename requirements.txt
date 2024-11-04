@@ -15,5 +15,6 @@ sqlalchemy
 PyYAML
 transformers
 accelerate
+tenacity
 openai
 anthropic

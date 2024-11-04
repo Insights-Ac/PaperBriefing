@@ -3,6 +3,7 @@ import os
 import re
 import time
 import yaml
+import hashlib
 from tqdm import tqdm
 
 from pdf_parser import parse_and_clean_pdf, clean_text
@@ -23,10 +24,8 @@ def main():
     
     # Extract parameters from config
     platform = config['scraping']['platform']
-    conference = config['scraping']['conference']
-    year = config['scraping']['year']
-    track = config['scraping']['track']
-    submission_type = config['scraping']['submission_type']
+    num_cap = config['scraping'].get('num_cap')
+    max_retries = config['scraping'].get('max_retries', 3)
     output_dir = config['paths']['output_dir']
     db_path = config['paths']['db_path']
     
@@ -36,7 +35,7 @@ def main():
     
     # Scrape PDF URLs based on platform
     if platform.lower() == 'openreview':
-        papers = scrape_openreview(conference, year, track, submission_type)
+        papers = scrape_openreview(**config['scraping']['filters'], num_cap=num_cap, max_retries=max_retries)
     else:
         raise ValueError(f"Unsupported platform: {platform}")
     
@@ -45,26 +44,29 @@ def main():
         os.makedirs(output_dir)
     
     # Process each paper
-    for title, url in tqdm(papers, desc="Processing papers"):
-        # Preprocess the title to create a valid ID
-        processed_id = clean_text(title)  # Remove non-ASCII characters
-        processed_title = processed_id
-        processed_id = f'{processed_id.replace(" ", "_")}_{conference}_{year}_{track}_{submission_type}_{platform}'
+    for paper_id, title, url in tqdm(papers, desc="Processing papers"):
+        # Create a unique ID using MD5 hash
+        paper_id = hashlib.md5(paper_id.encode()).hexdigest()
+        title = clean_text(title)
 
         # Check if the paper already exists in the database
-        existing_papers = db.get_papers(filters={'id': processed_id})
+        existing_papers = db.get_papers(filters={'id': paper_id})
         if existing_papers and existing_papers[0].summary:
-            print(f"Skipping {title}, already processed.")
-            continue
+            if config['scraping']['enforce_rescrape']:
+                # Delete existing entry
+                db.delete_paper(existing_papers[0].id)
+            else:
+                print(f"Skipping {title}, already processed.")
+                continue
         
         # Download PDF
-        pdf_path = download_pdf(f'{processed_id}.pdf', url, output_dir)
+        pdf_path = download_pdf(f'{paper_id}.pdf', url, output_dir)
         if not pdf_path:
             print(f"Failed to download {title}.")
             continue
         
         # Parse and clean PDF
-        content = parse_and_clean_pdf(pdf_path)
+        content = parse_and_clean_pdf(pdf_path, cap_at=config['scraping']['cap_at'])
         if config['summarization']['content_cap']:
             content = content[:config['summarization']['content_cap']]
 
@@ -76,12 +78,8 @@ def main():
         
         # Create a new Paper entry
         paper_entry = Paper(
-            id=processed_id,
-            title=processed_title,
-            conference=conference,
-            year=year,
-            track=track,
-            submission_type=submission_type,
+            id=paper_id,
+            title=title,
             platform=platform,
             pdf_url=url,
             pdf_path=pdf_path,

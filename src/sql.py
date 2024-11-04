@@ -12,10 +12,6 @@ class Paper(Base):
 
     id = Column(String, primary_key=True)
     title = Column(String)
-    conference = Column(String)
-    year = Column(Integer)
-    track = Column(String)
-    submission_type = Column(String)
     platform = Column(String)
 
     pdf_url = Column(String)
@@ -24,7 +20,7 @@ class Paper(Base):
     summary = Column(String)
 
     def __repr__(self):
-        return f"<Paper(id={self.id}, title='{self.title}', conference='{self.conference}', year={self.year}, track='{self.track}', submission_type='{self.submission_type}', platform='{self.platform}')>"
+        return f"<Paper(id={self.id}, title='{self.title}', platform='{self.platform}')>"
 
 
 class Database:
