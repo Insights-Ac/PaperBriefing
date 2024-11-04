@@ -114,7 +114,7 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
             page_number = 1
             
             while True:
-                print(f"Processing page {page_number}")
+                print(f"Processing page {page_number}", flush=True)
                 # Wait for the content to load with increased timeout
                 print("Waiting for content to load...")
                 WebDriverWait(driver, 20).until(
@@ -161,17 +161,25 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
                 
                 # Check if there's a next page
                 try:
-                    next_button = driver.find_element(By.XPATH, "//li[contains(@class, 'right-arrow')]/a/span[text()='›']")
-                    if 'disabled' not in next_button.find_element(By.XPATH, "..").get_attribute('class'):
-                        print("Moving to the next page...")
-                        next_button.click()
-                        time.sleep(3)  # Wait for the next page to load
-                        page_number += 1
-                    else:
-                        print("Reached the last page.")
+                    # First check if we're on a disabled last page
+                    disabled_button = driver.find_elements(By.XPATH, "//li[contains(@class, 'right-arrow') and contains(@class, 'disabled')]")
+                    if disabled_button:
+                        print("Reached the last page.", flush=True)
                         break
+
+                    # If not disabled, proceed with finding and clicking the next button
+                    next_button = driver.find_element(By.XPATH, "//li[contains(@class, 'right-arrow')]/a/span[text()='›']")
+                    print("Moving to the next page...", flush=True)
+                    # Scroll the button into view using JavaScript
+                    driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
+                    # Wait a moment for the scroll to complete
+                    time.sleep(1)
+                    driver.execute_script("arguments[0].click();", next_button)
+                    time.sleep(3)  # Wait for the next page to load
+                    page_number += 1
                 except Exception as e:
-                    print("No more pages or error finding next button.")
+                    print(f"Navigation error: {e}", flush=True)
+                    print("No more pages or error finding next button.", flush=True)
                     break
             
             return papers
