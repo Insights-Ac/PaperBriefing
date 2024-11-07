@@ -1,18 +1,17 @@
 scraping:
-  platform: OpenReview
+  platform: iclr
   filters:
-    conference: ICLR.cc
     year: 2024
-    track: Conference
-    submission_type: tab-accept-oral
-  # num_cap: 1
+    filter_name: sessions
+    filter_value: Poster Session 1
+  num_cap: 5
   enforce_rescrape: false
   cap_at: "REFERENCES"
   delay: 1
 
 paths:
-  output_dir: data/downloaded_papers/iclr2024_oral
-  db_path: sqlite:///data/iclr2024_oral.db
+  output_dir: data/downloaded_papers/iclr2024_full
+  db_path: sqlite:///data/iclr2024_full.db
 
 summarization:
   provider: openai

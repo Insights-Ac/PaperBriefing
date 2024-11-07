@@ -12,6 +12,36 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from urllib.parse import urljoin
+
+
+def download_pdf(filename, url, output_dir):
+    """
+    Download a PDF file and save it to the specified directory.
+    
+    :param title: str, title of the paper
+    :param url: str, URL of the PDF
+    :param output_dir: str, directory to save the PDF
+    """
+    @retry(
+        retry=retry_if_exception_type(Exception),
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5)
+    )
+    def _download_with_retry():
+        response = requests.get(url)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download PDF: HTTP {response.status_code}")
+        filepath = os.path.join(output_dir, filename)
+        with open(filepath, 'wb') as f:
+            f.write(response.content)
+        return filepath
+
+    try:
+        return _download_with_retry()
+    except Exception as e:
+        print(f"Failed to download after retries: {str(e)}")
+        return None
 
 
 def check_firefox_installation():
@@ -209,35 +239,6 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
                     print(f"Error closing driver: {str(e)}")
 
 
-def download_pdf(filename, url, output_dir):
-    """
-    Download a PDF file and save it to the specified directory.
-    
-    :param title: str, title of the paper
-    :param url: str, URL of the PDF
-    :param output_dir: str, directory to save the PDF
-    """
-    @retry(
-        retry=retry_if_exception_type(Exception),
-        wait=wait_exponential(multiplier=1, min=4, max=60),
-        stop=stop_after_attempt(5)
-    )
-    def _download_with_retry():
-        response = requests.get(url)
-        if response.status_code != 200:
-            raise Exception(f"Failed to download PDF: HTTP {response.status_code}")
-        filepath = os.path.join(output_dir, filename)
-        with open(filepath, 'wb') as f:
-            f.write(response.content)
-        return filepath
-
-    try:
-        return _download_with_retry()
-    except Exception as e:
-        print(f"Failed to download after retries: {str(e)}")
-        return None
-
-
 def scrape_from_txt(file_path):
     """
     Scrape PDFs from URLs listed in a text file.
@@ -268,3 +269,91 @@ def scrape_from_txt(file_path):
     except Exception as e:
         print(f"Error reading file {file_path}: {str(e)}")
         raise
+
+
+def scrape_iclr(year, filter_name=None, filter_value=None, max_papers=None):
+    """
+    Scrape papers from ICLR website using filter parameters.
+
+    :param year: Conference year (e.g., 2024)
+    :param filter_name: Filter category (e.g., 'title', 'topic', 'author', 'session')
+    :param filter_value: Value to filter by
+    :param max_papers: Maximum number of papers to scrape (optional)
+    :return: list of tuples (paper_id, title, pdf_url)
+    """
+    driver = None
+    papers = []
+    paper_count = 0
+    
+    try:
+        # Construct the URL with filter parameters
+        base_url = f"https://iclr.cc/virtual/{year}/papers.html"
+        if filter_name and filter_value:
+            # Replace spaces with + for URL encoding
+            encoded_filter_value = filter_value.replace(' ', '+')
+            base_url += f"?filter={filter_name}&search={encoded_filter_value}"
+        
+        driver = setup_firefox_driver()
+        print(f"Fetching papers from ICLR: {base_url}")
+        driver.get(base_url)
+        time.sleep(3)  # Wait for dynamic content
+        
+        # Get all paper links from the filtered page
+        paper_elements = driver.find_elements(By.CSS_SELECTOR, "a[href*='poster/']")
+        paper_links = [elem.get_attribute('href') for elem in paper_elements if elem.get_attribute('href')]
+        
+        for paper_url in paper_links:
+            try:
+                # Get paper title
+                driver.get(paper_url)
+                title_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "h2.card-title.main-title.text-center"))
+                )
+                title = title_element.text.strip() if title_element else "Unknown Title"
+                
+                # Get OpenReview link
+                openreview_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='OpenReview']"))
+                )
+                openreview_url = openreview_element.get_attribute('href')
+                if not openreview_url:
+                    continue
+                
+                # Get PDF link from OpenReview page
+                driver.get(openreview_url)
+                pdf_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "a.citation_pdf_url"))
+                )
+                pdf_url = pdf_element.get_attribute('href')
+                if pdf_url.startswith('/'):
+                    pdf_url = urljoin("https://openreview.net", pdf_url)
+                
+                # Generate paper ID and store paper info
+                paper_number = paper_url.split('/')[-1]
+                paper_id = f"ICLR{year}_{paper_number}"
+                if filter_name and filter_value:
+                    paper_id += f"_{filter_name}_{filter_value}"
+                
+                papers.append((paper_id, title, pdf_url))
+                paper_count += 1
+                print(f"Found paper {paper_count}: {title}", flush=True)
+                
+                if max_papers and paper_count >= max_papers:
+                    return papers
+                    
+            except Exception as e:
+                print(f"Error processing paper {paper_url}: {str(e)}")
+                continue
+                
+        return papers
+        
+    except Exception as e:
+        print(f"Error during ICLR scraping: {str(e)}")
+        raise
+        
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except Exception as e:
+                print(f"Error closing driver: {str(e)}")
