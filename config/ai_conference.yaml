@@ -1,0 +1,49 @@
+- name: ICML2024
+  scraping:
+    platform: ai_conference
+    filters:
+      conference: ICML
+      year: 2024
+    # num_cap: 5
+    enforce_rescrape: false
+    cap_at: "REFERENCES"
+    delay: 1
+
+  paths:
+    output_dir: data/downloaded_papers/icml2024_full
+    db_path: sqlite:///data/icml2024_full.db
+
+  summarization:
+    provider: openai
+    model_name: gpt-4o-mini
+    prefix: "Summarize the following academic paper, and output your summary in the following format: [Topics:] <five keywords describing the main topics of the paper, with commas separating them and relevance descending> [Summary:] <summary as one concise paragraph>"
+    suffix: ""
+    content_cap: null
+    param:
+      max_tokens: 1000
+      temperature: 0.7
+
+- name: ICLR2024
+  scraping:
+    platform: ai_conference
+    filters:
+      conference: ICLR
+      year: 2024
+    # num_cap: 5
+    enforce_rescrape: false
+    cap_at: "REFERENCES"
+    delay: 1
+
+  paths:
+    output_dir: data/downloaded_papers/iclr2024_full
+    db_path: sqlite:///data/iclr2024_full.db
+
+  summarization:
+    provider: openai
+    model_name: gpt-4o-mini
+    prefix: "Summarize the following academic paper, and output your summary in the following format: [Topics:] <five keywords describing the main topics of the paper, with commas separating them and relevance descending> [Summary:] <summary as one concise paragraph>"
+    suffix: ""
+    content_cap: null
+    param:
+      max_tokens: 1000
+      temperature: 0.7

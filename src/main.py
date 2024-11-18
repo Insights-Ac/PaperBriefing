@@ -7,7 +7,7 @@ import hashlib
 from tqdm import tqdm
 
 from pdf_parser import parse_and_clean_pdf, clean_text
-from pdf_scraper import download_pdf, scrape_openreview, scrape_iclr
+from pdf_scraper import download_pdf, scrape_openreview, scrape_ai_conference
 from sql import Database, Paper
 from summarizer import summarize_text
 
@@ -46,8 +46,8 @@ def main():
             papers = scrape_openreview(**config['scraping']['filters'], num_cap=num_cap, max_retries=max_retries)
         elif platform.lower() == 'txt':
             papers = scrape_from_txt(**config['scraping']['filters'])
-        elif platform.lower() == 'iclr':
-            papers = scrape_iclr(**config['scraping']['filters'], max_papers=num_cap)
+        elif platform.lower() == 'ai_conference':
+            papers = scrape_ai_conference(**config['scraping']['filters'], max_papers=num_cap)
         else:
             raise ValueError(f"Unsupported platform: {platform}")
         

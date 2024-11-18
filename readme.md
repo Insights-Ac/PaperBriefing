@@ -10,7 +10,7 @@ The idea behind this project is to enable a quick review of all the accepted pap
 
 The `Scraper` module (implemented in `pdf_scraper.py`) is responsible for collecting academic papers from online platforms. It uses Selenium with a Firefox web driver to navigate and scrape data from websites like OpenReview with a specified filter. The module handles pagination and extracts paper titles and PDF URLs. It also includes functionality to check for Firefox installation and set up the web driver.
 
-> **Note:** Currently supported platforms are OpenReview and ICLR.cc. Support for other platforms is planned.
+> **Note:** Currently supported platforms are OpenReview and the three top AI conferences: ICLR, ICML, and NeurIPS. Support for other platforms is planned.
 
 ### Parser
 

@@ -271,10 +271,11 @@ def scrape_from_txt(file_path):
         raise
 
 
-def scrape_iclr(year, filter_name=None, filter_value=None, max_papers=None):
+def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, max_papers=None):
     """
-    Scrape papers from ICLR website using filter parameters.
+    Scrape papers from the three top AI conference websites (ICLR, ICML, NeurIPS).
 
+    :param conference: Conference name ('ICLR', 'ICML', or 'NeurIPS')
     :param year: Conference year (e.g., 2024)
     :param filter_name: Filter category (e.g., 'title', 'topic', 'author', 'session')
     :param filter_value: Value to filter by
@@ -286,15 +287,18 @@ def scrape_iclr(year, filter_name=None, filter_value=None, max_papers=None):
     paper_count = 0
     
     try:
-        # Construct the URL with filter parameters
-        base_url = f"https://iclr.cc/virtual/{year}/papers.html"
+        # Construct the base URL based on conference
+        conference = conference.upper()
+        if conference not in ['ICLR', 'ICML', 'NEURIPS']:
+            raise ValueError(f"Unsupported conference: {conference}")
+            
+        base_url = f"https://{conference.lower()}.cc/virtual/{year}/papers.html"
         if filter_name and filter_value:
-            # Replace spaces with + for URL encoding
             encoded_filter_value = filter_value.replace(' ', '+')
             base_url += f"?filter={filter_name}&search={encoded_filter_value}"
         
         driver = setup_firefox_driver()
-        print(f"Fetching papers from ICLR: {base_url}")
+        print(f"Fetching papers from {conference}: {base_url}")
         driver.get(base_url)
         time.sleep(3)  # Wait for dynamic content
         
@@ -311,26 +315,53 @@ def scrape_iclr(year, filter_name=None, filter_value=None, max_papers=None):
                 )
                 title = title_element.text.strip() if title_element else "Unknown Title"
                 
-                # Get OpenReview link
-                openreview_element = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='OpenReview']"))
-                )
-                openreview_url = openreview_element.get_attribute('href')
-                if not openreview_url:
-                    continue
-                
-                # Get PDF link from OpenReview page
-                driver.get(openreview_url)
-                pdf_element = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "a.citation_pdf_url"))
-                )
-                pdf_url = pdf_element.get_attribute('href')
-                if pdf_url.startswith('/'):
-                    pdf_url = urljoin("https://openreview.net", pdf_url)
+                # Handle PDF link based on conference
+                if conference == 'ICML':
+                    try:
+                        # First try the direct PDF link
+                        pdf_element = WebDriverWait(driver, 5).until(
+                            EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='PDF']"))
+                        )
+                        pdf_url = pdf_element.get_attribute('href')
+                    except Exception:
+                        # If direct PDF link not found, try the proceedings link
+                        try:
+                            proceedings_element = WebDriverWait(driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'Paper PDF')]"))
+                            )
+                            proceedings_url = proceedings_element.get_attribute('href')
+                            
+                            # Navigate to the proceedings page
+                            driver.get(proceedings_url)
+                            
+                            # Look for the download PDF link
+                            pdf_element = WebDriverWait(driver, 10).until(
+                                EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'Download PDF')]"))
+                            )
+                            pdf_url = pdf_element.get_attribute('href')
+                        except Exception as e:
+                            print(f"Could not find PDF link for paper: {str(e)}")
+                            continue
+                else:
+                    # For ICLR and NeurIPS, get PDF through OpenReview
+                    openreview_element = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='OpenReview']"))
+                    )
+                    openreview_url = openreview_element.get_attribute('href')
+                    if not openreview_url:
+                        continue
+                    
+                    driver.get(openreview_url)
+                    pdf_element = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "a.citation_pdf_url"))
+                    )
+                    pdf_url = pdf_element.get_attribute('href')
+                    if pdf_url.startswith('/'):
+                        pdf_url = urljoin("https://openreview.net", pdf_url)
                 
                 # Generate paper ID and store paper info
                 paper_number = paper_url.split('/')[-1]
-                paper_id = f"ICLR{year}_{paper_number}"
+                paper_id = f"{conference}{year}_{paper_number}"
                 if filter_name and filter_value:
                     paper_id += f"_{filter_name}_{filter_value}"
                 
@@ -348,7 +379,7 @@ def scrape_iclr(year, filter_name=None, filter_value=None, max_papers=None):
         return papers
         
     except Exception as e:
-        print(f"Error during ICLR scraping: {str(e)}")
+        print(f"Error during {conference} scraping: {str(e)}")
         raise
         
     finally:
