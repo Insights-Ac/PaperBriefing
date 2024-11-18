@@ -10,7 +10,7 @@ The idea behind this project is to enable a quick review of all the accepted pap
 
 The `Scraper` module (implemented in `pdf_scraper.py`) is responsible for collecting academic papers from online platforms. It uses Selenium with a Firefox web driver to navigate and scrape data from websites like OpenReview with a specified filter. The module handles pagination and extracts paper titles and PDF URLs. It also includes functionality to check for Firefox installation and set up the web driver.
 
-> **Note:** Currently, only OpenReview is supported, but support for other platforms is planned.
+> **Note:** Currently supported platforms are OpenReview and ICLR.cc. Support for other platforms is planned.
 
 ### Parser
 
@@ -155,10 +155,10 @@ As we said, the results are stored in an SQLite database. You can export the res
 
 ```bash
 # Export to markdown
-python src/exporter.py --db_url sqlite:///data/papers.db --output_path data/papers.md --format markdown
+python src/exporter.py --db_url sqlite:///data/papers.db --output_path data/papers.md --format markdown --title "Research Paper Summaries"
 
 # Export to HTML
-python src/exporter.py --db_url sqlite:///data/papers.db --output_path data/papers.html --format html
+python src/exporter.py --db_url sqlite:///data/papers.db --output_path data/papers.html --format html --title "Research Paper Summaries"
 ```
 
 The HTML file is styled with Bootstrap and Masonry layout, and you can view it in your browser or host it on any static file server.
@@ -169,7 +169,7 @@ The HTML file is styled with Bootstrap and Masonry layout, and you can view it i
 
 Currently, this tool is in a very early stage of development. Here are some of the things I plan to add in the future:
 
-- [/] Add a web interface for easier access to the results and potentially to fully control the whole process.
+- [ ] Add a web interface for easier access to the results and potentially to fully control the whole process.
 - [ ] Add a way to filter the papers based on keywords, titles, etc.
 - [ ] Explore more advanced prompts and procedures for more comprehensive summaries.
 

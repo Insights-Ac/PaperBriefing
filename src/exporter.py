@@ -11,13 +11,13 @@ class MarkdownExporter:
     def __init__(self, db: Database):
         self.db = db
 
-    def generate_markdown(self, papers: List[Paper]) -> str:
+    def generate_markdown(self, papers: List[Paper], title: str = "Research Paper Summaries") -> str:
         """Generate markdown content from a list of papers."""
         # Sort papers by title
         papers = sorted(papers, key=lambda x: x.title.lower())
         
-        md_content = "# Research Paper Summaries\n\n"
-        md_content += f"*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n"
+        md_content = f"# {title}\n\n"
+        md_content += f"*Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} by [PubSummarizer](https://github.com/Logan-Lin/PubSummarizer)*\n\n"
 
         for paper in papers:
             md_content += self._format_paper(paper)
@@ -53,22 +53,22 @@ class MarkdownExporter:
         md_text += "---\n\n"
         return md_text
 
-    def export_to_file(self, output_path: str, filters: Optional[dict] = None) -> None:
+    def export_to_file(self, output_path: str, filters: Optional[dict] = None, title: str = "Research Paper Summaries") -> None:
         """
         Export papers from database to a markdown file.
         
         Args:
             output_path: Path where the markdown file will be saved
             filters: Optional filters to apply when querying papers
+            title: Custom title for the markdown document
         """
-        # Get papers from database
         papers = self.db.get_papers(filters)
         
         if not papers:
             raise ValueError("No papers found in the database with the given filters")
 
-        # Generate markdown content
-        md_content = self.generate_markdown(papers)
+        # Generate markdown content with custom title
+        md_content = self.generate_markdown(papers, title)
 
         # Ensure the output directory exists
         output_file = Path(output_path)
@@ -83,7 +83,7 @@ class WebExporter:
     def __init__(self, db: Database):
         self.db = db
         
-    def generate_html(self, papers: List[Paper]) -> str:
+    def generate_html(self, papers: List[Paper], title: str = "Research Paper Summaries") -> str:
         """Generate HTML content from a list of papers."""
         # Sort papers by title
         papers = sorted(papers, key=lambda x: x.title.lower())
@@ -94,14 +94,14 @@ class WebExporter:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Research Paper Summaries</title>
+    <title>PubSummarizer - {title}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
 </head>
 <body>
     <div class="container py-4">
-        <h1 class="mb-4">Research Paper Summaries</h1>
-        <p class="text-muted"><em>Generated on {date}</em></p>
+        <h1 class="mb-4">{title}</h1>
+        <p class="text-muted"><em>Generated on {date} by <a href="https://github.com/Logan-Lin/PubSummarizer">PubSummarizer</a></em></p>
         <div class="row" data-masonry='{{"percentPosition": true }}'>
             {papers_content}
         </div>
@@ -112,6 +112,7 @@ class WebExporter:
 """
         papers_content = "\n".join(self._format_paper(paper) for paper in papers)
         return html_content.format(
+            title=title,
             date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             papers_content=papers_content
         )
@@ -150,20 +151,21 @@ class WebExporter:
         html_text += '</div>\n</div>\n</div>\n'
         return html_text
 
-    def export_to_file(self, output_path: str, filters: Optional[dict] = None) -> None:
+    def export_to_file(self, output_path: str, filters: Optional[dict] = None, title: str = "Research Paper Summaries") -> None:
         """
         Export papers from database to an HTML file.
         
         Args:
             output_path: Path where the HTML file will be saved
             filters: Optional filters to apply when querying papers
+            title: Custom title for the HTML page
         """
         papers = self.db.get_papers(filters)
         
         if not papers:
             raise ValueError("No papers found in the database with the given filters")
 
-        html_content = self.generate_html(papers)
+        html_content = self.generate_html(papers, title)
 
         output_file = Path(output_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -172,7 +174,7 @@ class WebExporter:
             f.write(html_content)
 
 
-def export_papers(db_url: str, output_path: str, format: str = 'markdown', filters: Optional[dict] = None) -> None:
+def export_papers(db_url: str, output_path: str, format: str = 'markdown', filters: Optional[dict] = None, title: str = "Research Paper Summaries") -> None:
     """
     Convenience function to export papers from a database to either markdown or HTML format.
     
@@ -181,9 +183,7 @@ def export_papers(db_url: str, output_path: str, format: str = 'markdown', filte
         output_path: Path where the output file will be saved
         format: Output format - either 'markdown' or 'html' (default: 'markdown')
         filters: Optional filters to apply when querying papers
-    
-    Raises:
-        ValueError: If an invalid format is specified
+        title: Custom title for the output document
     """
     db = Database(db_url)
     
@@ -194,7 +194,7 @@ def export_papers(db_url: str, output_path: str, format: str = 'markdown', filte
     else:
         raise ValueError(f"Unsupported format: {format}. Use 'markdown' or 'html'")
         
-    exporter.export_to_file(output_path, filters)
+    exporter.export_to_file(output_path, filters, title)
     print(f"Exported papers to {output_path}")
 
 
@@ -205,6 +205,8 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, choices=['markdown', 'html'], default='markdown', 
                       help="Output format (markdown or html)")
     parser.add_argument("--filters", type=dict, help="Filters to apply when querying papers", default={})
+    parser.add_argument("--title", type=str, default="Research Paper Summaries",
+                      help="Custom title for the output document")
     args = parser.parse_args()
 
-    export_papers(args.db_url, args.output_path, args.format, args.filters)
+    export_papers(args.db_url, args.output_path, args.format, args.filters, args.title)
