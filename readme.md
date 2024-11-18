@@ -147,13 +147,29 @@ Or you can use a GUI tool like the SQLite Viewer plugin for VSCode.
 
 ![SQLite Viewer](assets/sqlite_viewer.png)
 
-This is certainly not a very elegant solution, but it gets the job done for now. I am planning to add a web interface in the future.
+This is certainly not a very elegant solution, but it gets the job done. Alternatively, you can export the results to a markdown file or an HTML file using the `exporter.py` script.
+
+### Export the results
+
+As we said, the results are stored in an SQLite database. You can export the results to a markdown file or an HTML file using the `exporter.py` script.
+
+```bash
+# Export to markdown
+python src/exporter.py --db_url sqlite:///data/papers.db --output_path data/papers.md --format markdown
+
+# Export to HTML
+python src/exporter.py --db_url sqlite:///data/papers.db --output_path data/papers.html --format html
+```
+
+The HTML file is styled with Bootstrap and Masonry layout, and you can view it in your browser or host it on any static file server.
+
+![Exported HTML](assets/html.png)
 
 ## Future work
 
 Currently, this tool is in a very early stage of development. Here are some of the things I plan to add in the future:
 
-- [ ] Add a web interface for easier access to the results and potentially to fully control the whole process.
+- [/] Add a web interface for easier access to the results and potentially to fully control the whole process.
 - [ ] Add a way to filter the papers based on keywords, titles, etc.
 - [ ] Explore more advanced prompts and procedures for more comprehensive summaries.
 
