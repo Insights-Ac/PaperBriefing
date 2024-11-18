@@ -7,7 +7,7 @@ import hashlib
 from tqdm import tqdm
 
 from pdf_parser import parse_and_clean_pdf, clean_text
-from pdf_scraper import download_pdf, scrape_openreview, scrape_ai_conference
+from pdf_scraper import download_pdf, scrape_openreview, scrape_ai_conference, scrape_cvpr
 from sql import Database, Paper
 from summarizer import summarize_text
 
@@ -28,7 +28,7 @@ def main():
 
     # Process each configuration
     for config in configs:
-        print(f"\nProcessing configuration: {config.get('name', 'Unnamed config')}")
+        print(f"\nProcessing configuration: {config.get('name', 'Unnamed config')}", flush=True)
         
         # Extract parameters from config
         platform = config['scraping']['platform']
@@ -48,6 +48,8 @@ def main():
             papers = scrape_from_txt(**config['scraping']['filters'])
         elif platform.lower() == 'ai_conference':
             papers = scrape_ai_conference(**config['scraping']['filters'], max_papers=num_cap)
+        elif platform.lower() == 'cvpr':
+            papers = scrape_cvpr(**config['scraping']['filters'], max_papers=num_cap)
         else:
             raise ValueError(f"Unsupported platform: {platform}")
         

@@ -104,7 +104,7 @@ def setup_firefox_driver():
             service=service,
             options=options
         )
-        print("Firefox ESR driver successfully initialized")
+        print("Firefox ESR driver successfully initialized", flush=True)
         return driver
     except Exception as e:
         print(f"Failed to initialize Firefox ESR driver: {str(e)}")
@@ -362,8 +362,6 @@ def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, 
                 # Generate paper ID and store paper info
                 paper_number = paper_url.split('/')[-1]
                 paper_id = f"{conference}{year}_{paper_number}"
-                if filter_name and filter_value:
-                    paper_id += f"_{filter_name}_{filter_value}"
                 
                 papers.append((paper_id, title, pdf_url))
                 paper_count += 1
@@ -380,6 +378,100 @@ def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, 
         
     except Exception as e:
         print(f"Error during {conference} scraping: {str(e)}")
+        raise
+        
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except Exception as e:
+                print(f"Error closing driver: {str(e)}")
+
+
+def scrape_cvpr(year, filter_name=None, filter_value=None, max_papers=None):
+    """
+    Scrape papers from the CVPR conference website.
+
+    :param year: Conference year (e.g., 2024)
+    :param filter_name: Filter category (e.g., 'sessions')
+    :param filter_value: Value to filter by (e.g., 'Oral')
+    :param max_papers: Maximum number of papers to scrape (optional)
+    :return: list of tuples (paper_id, title, pdf_url)
+    """
+    driver = None
+    papers = []
+    paper_count = 0
+    
+    try:
+        # Construct the base URL
+        base_url = f"https://cvpr.thecvf.com/virtual/{year}/papers.html"
+        if filter_name and filter_value:
+            encoded_filter_value = filter_value.replace(' ', '+')
+            base_url += f"?filter={filter_name}&search={encoded_filter_value}"
+        
+        driver = setup_firefox_driver()
+        print(f"Fetching papers from CVPR: {base_url}")
+        driver.get(base_url)
+        time.sleep(10)  # Wait for dynamic content
+        
+        # Get all paper links from the filtered page
+        paper_elements = driver.find_elements(By.CSS_SELECTOR, "a[href*='poster/']")
+        paper_links = [elem.get_attribute('href') for elem in paper_elements if elem.get_attribute('href')]
+        print(f"Found {len(paper_links)} papers")
+        
+        for paper_url in paper_links:
+            try:
+                # Get paper title and PDF link
+                driver.get(paper_url)
+                title_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "h2.card-title.main-title.text-center"))
+                )
+                title = title_element.text.strip() if title_element else "Unknown Title"
+                
+                try:
+                    # Try finding by link text
+                    pdf_page_element = WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'Paper PDF')]"))
+                    )
+                except Exception as e:
+                    print(f"Could not find PDF page link: {str(e)}")
+                    continue
+
+                # Navigate to the paper's HTML page
+                pdf_page_url = pdf_page_element.get_attribute('href')
+                driver.get(pdf_page_url)
+                
+                # Find the actual PDF download link
+                pdf_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, "//a[text()='pdf']"))
+                )
+                pdf_relative_url = pdf_element.get_attribute('href')
+                
+                # Convert relative URL to absolute URL if necessary
+                if pdf_relative_url.startswith('/'):
+                    pdf_url = f"https://openaccess.thecvf.com{pdf_relative_url}"
+                else:
+                    pdf_url = pdf_relative_url
+                
+                # Generate paper ID and store paper info
+                paper_number = paper_url.split('/')[-1]
+                paper_id = f"CVPR{year}_{paper_number}"
+                
+                papers.append((paper_id, title, pdf_url))
+                paper_count += 1
+                print(f"Found paper {paper_count}: {title}", flush=True)
+                
+                if max_papers and paper_count >= max_papers:
+                    return papers
+                    
+            except Exception as e:
+                print(f"Error processing paper {paper_url}: {str(e)}")
+                continue
+                
+        return papers
+        
+    except Exception as e:
+        print(f"Error during CVPR scraping: {str(e)}")
         raise
         
     finally:
