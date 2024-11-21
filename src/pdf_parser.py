@@ -1,5 +1,6 @@
 import io
 import re
+import warnings
 
 import PyPDF2
 import pytesseract
@@ -8,6 +9,9 @@ from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
+
+# Filter PyPDF2 warnings about float objects
+warnings.filterwarnings('ignore', category=UserWarning, module='PyPDF2')
 
 
 def parse_pdf(pdf_path):

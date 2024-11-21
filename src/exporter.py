@@ -1,4 +1,5 @@
 import argparse
+import re
 
 from typing import List, Optional
 from datetime import datetime
@@ -35,16 +36,17 @@ class MarkdownExporter:
             # Extract topics, TL;DR, and summary sections
             sections = clean_summary.split('[')
             for section in sections:
-                if section.startswith('Topics:]'):
-                    topics = section.replace('Topics:]', '').strip()
+                section_lower = section.lower()
+                if section_lower.startswith('topics:]'):
+                    topics = re.sub(r'(?i)Topics:]', '', section).strip()
                     md_text += "### Topics\n\n"
                     md_text += f"{topics}\n\n"
-                elif section.startswith('TL;DR:]'):
-                    tldr = section.replace('TL;DR:]', '').strip()
+                elif section_lower.startswith('tl;dr:]'):
+                    tldr = re.sub(r'(?i)TL;DR:]', '', section).strip()
                     md_text += "### TL;DR\n\n"
                     md_text += f"{tldr}\n\n"
-                elif section.startswith('Summary:]'):
-                    summary = section.replace('Summary:]', '').strip()
+                elif section_lower.startswith('summary:]'):
+                    summary = re.sub(r'(?i)Summary:]', '', section).strip()
                     md_text += "### Summary\n\n"
                     md_text += f"{summary}\n\n"
 
@@ -125,28 +127,29 @@ class WebExporter:
         html_text += f'<h3 class="card-title h4">{paper.title}</h3>\n'
         
         if paper.summary:
+            # Sometimes, LLM apply special formatting to the title of the sections. Remove for consistency.
             clean_summary = paper.summary.replace('**', '').replace('__', '')
             sections = clean_summary.split('[')
             
             for section in sections:
-                if section.startswith('Topics:]'):
-                    topics = section.replace('Topics:]', '').strip()
+                section_lower = section.lower()
+                if section_lower.startswith('topics:]'):
+                    topics = re.sub(r'(?i)Topics:]', '', section).strip()
                     topic_list = [t.strip() for t in topics.split(',')]
                     html_text += '<div class="mb-3">\n'
-                    html_text += '<h3 class="h5">Topics</h3>\n'
                     html_text += '<div class="d-flex gap-2 flex-wrap">\n'
                     for topic in topic_list:
                         html_text += f'<span class="badge bg-primary">{topic}</span>\n'
                     html_text += '</div>\n'
                     html_text += '</div>\n'
-                elif section.startswith('TL;DR:]'):
-                    tldr = section.replace('TL;DR:]', '').strip()
+                elif section_lower.startswith('tl;dr:]'):
+                    tldr = re.sub(r'(?i)TL;DR:]', '', section).strip()
                     html_text += '<div class="mb-3">\n'
                     html_text += '<h3 class="h5">TL;DR</h3>\n'
                     html_text += f'<p class="card-text">{tldr}</p>\n'
                     html_text += '</div>\n'
-                elif section.startswith('Summary:]'):
-                    summary = section.replace('Summary:]', '').strip()
+                elif section_lower.startswith('summary:]'):
+                    summary = re.sub(r'(?i)Summary:]', '', section).strip()
                     html_text += '<div class="mb-3">\n'
                     html_text += '<h3 class="h5">Summary</h3>\n'
                     html_text += f'<p class="card-text">{summary}</p>\n'
