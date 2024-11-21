@@ -1,4 +1,4 @@
-- name: NeurIPS2024Oral
+- name: "NeurIPS 2024 Oral"
   scraping:
     platform: OpenReview
     filters:
@@ -11,8 +11,8 @@
     delay: 1
   
   paths:
-    output_dir: data/downloaded_papers/neurips2024_oral
-    db_path: sqlite:///data/neurips2024_oral.db
+    output_dir: data/downloaded_papers
+    db_path: sqlite:///data/papers.db
   
   summarization:
     provider: openai
@@ -22,7 +22,7 @@
     content_cap: null
     param: {}
   
-- name: ICML2024Oral
+- name: "ICML 2024 Oral"
   scraping:
     platform: OpenReview
     filters:
@@ -35,8 +35,8 @@
     delay: 1
 
   paths:
-    output_dir: data/downloaded_papers/icml2024_oral
-    db_path: sqlite:///data/icml2024_oral.db
+    output_dir: data/downloaded_papers
+    db_path: sqlite:///data/papers.db
 
   summarization:
     provider: openai
@@ -46,7 +46,7 @@
     content_cap: null
     param: {}
 
-- name: ICLR2024Oral
+- name: "ICLR 2024 Oral"
   scraping:
     platform: OpenReview
     filters:
@@ -59,8 +59,8 @@
     delay: 1
   
   paths:
-    output_dir: data/downloaded_papers/iclr2024_oral
-    db_path: sqlite:///data/iclr2024_oral.db
+    output_dir: data/downloaded_papers
+    db_path: sqlite:///data/papers.db
   
   summarization:
     provider: openai

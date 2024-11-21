@@ -11,8 +11,9 @@ class Paper(Base):
     __tablename__ = 'Paper'
 
     id = Column(String, primary_key=True)
-    title = Column(String)
     platform = Column(String)
+    collection = Column(String)
+    title = Column(String)
 
     pdf_url = Column(String)
     pdf_path = Column(String)

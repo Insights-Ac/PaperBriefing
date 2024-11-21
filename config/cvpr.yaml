@@ -1,4 +1,4 @@
-- name: CVPR2024Oral
+- name: "CVPR 2024 Oral"
   scraping:
     platform: cvpr
     filters:
@@ -11,8 +11,8 @@
     delay: 1
 
   paths:
-    output_dir: data/downloaded_papers/cvpr2024_oral
-    db_path: sqlite:///data/cvpr2024_oral.db
+    output_dir: data/downloaded_papers
+    db_path: sqlite:///data/papers.db
 
   summarization:
     provider: openai

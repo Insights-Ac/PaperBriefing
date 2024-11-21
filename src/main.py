@@ -28,7 +28,8 @@ def main():
 
     # Process each configuration
     for config in configs:
-        print(f"\nProcessing configuration: {config.get('name', 'Unnamed config')}", flush=True)
+        name = config.get('name', 'Unnamed config')
+        print(f"\nProcessing configuration: {name}", flush=True)
         
         # Extract parameters from config
         platform = config['scraping']['platform']
@@ -59,8 +60,8 @@ def main():
         
         # Process each paper
         for paper_id, title, url in tqdm(papers, desc="Processing papers"):
-            # Create a unique ID using MD5 hash
-            paper_id = hashlib.md5(paper_id.encode()).hexdigest()
+            # Create a unique ID using SHA-256 hash
+            paper_id = hashlib.sha256(paper_id.encode()).hexdigest()
             title = clean_text(title)
 
             # Check if the paper already exists in the database
@@ -93,6 +94,7 @@ def main():
             # Create a new Paper entry
             paper_entry = Paper(
                 id=paper_id,
+                collection=name,
                 title=title,
                 platform=platform,
                 pdf_url=url,
