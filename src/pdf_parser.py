@@ -74,16 +74,13 @@ def clean_text(text):
     return text
 
 
-def parse_and_clean_pdf(pdf_path, cap_at=None):
+def parse_and_clean_pdf(pdf_path):
     """
-    Parse a PDF file, clean the extracted text, and optionally cap it at the specified text.
+    Parse a PDF file, clean the extracted text.
     
     :param pdf_path: str, path to the PDF file
-    :param cap_at: str, optional text that marks start of references section
     :return: str, cleaned text
     """
     raw_text = parse_pdf(pdf_path)
     cleaned_text = clean_text(raw_text)
-    if cap_at and cap_at in cleaned_text:
-        cleaned_text = cleaned_text[:cleaned_text.index(cap_at)]
     return cleaned_text

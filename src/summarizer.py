@@ -85,7 +85,6 @@ def summarize_text(prefix, suffix, text, provider, model_name, **kwargs):
     text (str): The text to summarize.
     provider (str): The provider of the model (e.g., "openai", "claude", "hf").
     model_name (str): The name of the model to use (e.g., "facebook/opt-350m", "chatgpt-4o").
-    cache_dir (str, optional): The directory to cache the model (for Hugging Face models).
     
     Returns:
     str: The generated summary.

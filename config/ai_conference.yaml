@@ -5,7 +5,6 @@
       conference: ICML
       year: 2024
     enforce_rescrape: false
-    cap_at: "REFERENCES"
     delay: 1
 
   paths:
@@ -17,6 +16,7 @@
     model_name: gpt-4o-mini
     prefix: ""
     suffix: "Summarize the above academic paper and structure your response in the following format: [Topics:] <Provide five keywords that capture the primary themes or concepts of the paper, listed in descending order of relevance, separated by commas.> [TL;DR:] <Write one concise sentence that encapsulates the paper's main contribution or finding.> [Summary:] <Write one concise paragraph that provides a high-level overview of the paper, focusing on its objective, methods, results, and implications. Ensure your summary reflects the paper's content accurately, without adding interpretations or assumptions. Check your response for clarity, conciseness, and fidelity to the original text.>"
+    cap_at: "REFERENCES"
     content_cap: null
     param: {}
 
@@ -27,7 +27,6 @@
       conference: ICLR
       year: 2024
     enforce_rescrape: false
-    cap_at: "REFERENCES"
     delay: 1
 
   paths:
@@ -39,5 +38,6 @@
     model_name: gpt-4o-mini
     prefix: ""
     suffix: "Summarize the above academic paper and structure your response in the following format: [Topics:] <Provide five keywords that capture the primary themes or concepts of the paper, listed in descending order of relevance, separated by commas.> [TL;DR:] <Write one concise sentence that encapsulates the paper's main contribution or finding.> [Summary:] <Write one concise paragraph that provides a high-level overview of the paper, focusing on its objective, methods, results, and implications. Ensure your summary reflects the paper's content accurately, without adding interpretations or assumptions. Check your response for clarity, conciseness, and fidelity to the original text.>"
+    cap_at: "REFERENCES"
     content_cap: null
     param: {}
