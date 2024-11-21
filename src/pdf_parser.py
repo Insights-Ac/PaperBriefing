@@ -1,6 +1,9 @@
 import io
+import os
 import re
 import warnings
+import requests
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 import PyPDF2
 import pytesseract
@@ -12,6 +15,35 @@ from pdfminer.pdfpage import PDFPage
 
 # Filter PyPDF2 warnings about float objects
 warnings.filterwarnings('ignore', category=UserWarning, module='PyPDF2')
+
+
+def download_pdf(filename, url, output_dir):
+    """
+    Download a PDF file and save it to the specified directory.
+    
+    :param title: str, title of the paper
+    :param url: str, URL of the PDF
+    :param output_dir: str, directory to save the PDF
+    """
+    @retry(
+        retry=retry_if_exception_type(Exception),
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5)
+    )
+    def _download_with_retry():
+        response = requests.get(url)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download PDF: HTTP {response.status_code}")
+        filepath = os.path.join(output_dir, filename)
+        with open(filepath, 'wb') as f:
+            f.write(response.content)
+        return filepath
+
+    try:
+        return _download_with_retry()
+    except Exception as e:
+        print(f"Failed to download after retries: {str(e)}")
+        return None
 
 
 def parse_pdf(pdf_path):

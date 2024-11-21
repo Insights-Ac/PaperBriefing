@@ -15,35 +15,6 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from urllib.parse import urljoin
 
 
-def download_pdf(filename, url, output_dir):
-    """
-    Download a PDF file and save it to the specified directory.
-    
-    :param title: str, title of the paper
-    :param url: str, URL of the PDF
-    :param output_dir: str, directory to save the PDF
-    """
-    @retry(
-        retry=retry_if_exception_type(Exception),
-        wait=wait_exponential(multiplier=1, min=4, max=60),
-        stop=stop_after_attempt(5)
-    )
-    def _download_with_retry():
-        response = requests.get(url)
-        if response.status_code != 200:
-            raise Exception(f"Failed to download PDF: HTTP {response.status_code}")
-        filepath = os.path.join(output_dir, filename)
-        with open(filepath, 'wb') as f:
-            f.write(response.content)
-        return filepath
-
-    try:
-        return _download_with_retry()
-    except Exception as e:
-        print(f"Failed to download after retries: {str(e)}")
-        return None
-
-
 def check_firefox_installation():
     """
     Check Firefox ESR installation and print debug information.
@@ -239,49 +210,67 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
                     print(f"Error closing driver: {str(e)}")
 
 
-def scrape_from_txt(file_path):
-    """
-    Scrape PDFs from URLs listed in a text file.
-    Each line in the text file should contain a PDF URL.
-    
-    :param file_path: str, path to the text file containing PDF URLs
-    :return: list of tuples (paper_id, title, pdf_url)
-    """
-    papers = []
-    
-    try:
-        with open(file_path, 'r') as file:
-            for line_number, line in enumerate(file, 1):
-                pdf_url = line.strip()
-                if pdf_url:
-                    # Generate a unique paper ID using line number since we might not have titles
-                    paper_id = f'paper_{line_number}_{pdf_url}'
-                    # Use the URL as a placeholder title since we can't extract it without downloading
-                    title = f"Paper from {pdf_url}"
-                    papers.append((paper_id, title, pdf_url))
-                    print(f"Found paper URL: {pdf_url}")
-                else:
-                    print(f"Skipping invalid URL at line {line_number}: {pdf_url}")
-        
-        print(f"Successfully loaded {len(papers)} paper URLs from {file_path}")
-        return papers
-        
-    except Exception as e:
-        print(f"Error reading file {file_path}: {str(e)}")
-        raise
-
-
 def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, max_papers=None):
     """
     Scrape papers from the three top AI conference websites (ICLR, ICML, NeurIPS).
-
-    :param conference: Conference name ('ICLR', 'ICML', or 'NeurIPS')
-    :param year: Conference year (e.g., 2024)
-    :param filter_name: Filter category (e.g., 'title', 'topic', 'author', 'session')
-    :param filter_value: Value to filter by
-    :param max_papers: Maximum number of papers to scrape (optional)
-    :return: list of tuples (paper_id, title, pdf_url)
     """
+    @retry(
+        retry=retry_if_exception_type((Exception)),
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5)
+    )
+    def _get_paper_info(driver, paper_url, conference):
+        """
+        Helper function to get paper information with retry mechanism.
+        """
+        driver.get(paper_url)
+        title_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "h2.card-title.main-title.text-center"))
+        )
+        title = title_element.text.strip() if title_element else "Unknown Title"
+
+        # Handle PDF link based on conference
+        if conference == 'ICML':
+            try:
+                # First try the direct PDF link
+                pdf_element = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='PDF']"))
+                )
+                pdf_url = pdf_element.get_attribute('href')
+            except Exception:
+                # If direct PDF link not found, try the proceedings link
+                proceedings_element = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'Paper PDF')]"))
+                )
+                proceedings_url = proceedings_element.get_attribute('href')
+
+                # Navigate to the proceedings page
+                driver.get(proceedings_url)
+
+                # Look for the download PDF link
+                pdf_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'Download PDF')]"))
+                )
+                pdf_url = pdf_element.get_attribute('href')
+        else:
+            # For ICLR and NeurIPS, get PDF through OpenReview
+            openreview_element = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='OpenReview']"))
+            )
+            openreview_url = openreview_element.get_attribute('href')
+            if not openreview_url:
+                raise Exception("OpenReview URL not found")
+
+            driver.get(openreview_url)
+            pdf_element = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "a.citation_pdf_url"))
+            )
+            pdf_url = pdf_element.get_attribute('href')
+            if pdf_url.startswith('/'):
+                pdf_url = urljoin("https://openreview.net", pdf_url)
+
+        return title, pdf_url
+
     driver = None
     papers = []
     paper_count = 0
@@ -308,56 +297,8 @@ def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, 
         
         for paper_url in paper_links:
             try:
-                # Get paper title
-                driver.get(paper_url)
-                title_element = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "h2.card-title.main-title.text-center"))
-                )
-                title = title_element.text.strip() if title_element else "Unknown Title"
-                
-                # Handle PDF link based on conference
-                if conference == 'ICML':
-                    try:
-                        # First try the direct PDF link
-                        pdf_element = WebDriverWait(driver, 5).until(
-                            EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='PDF']"))
-                        )
-                        pdf_url = pdf_element.get_attribute('href')
-                    except Exception:
-                        # If direct PDF link not found, try the proceedings link
-                        try:
-                            proceedings_element = WebDriverWait(driver, 5).until(
-                                EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'Paper PDF')]"))
-                            )
-                            proceedings_url = proceedings_element.get_attribute('href')
-                            
-                            # Navigate to the proceedings page
-                            driver.get(proceedings_url)
-                            
-                            # Look for the download PDF link
-                            pdf_element = WebDriverWait(driver, 10).until(
-                                EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'Download PDF')]"))
-                            )
-                            pdf_url = pdf_element.get_attribute('href')
-                        except Exception as e:
-                            print(f"Could not find PDF link for paper: {str(e)}")
-                            continue
-                else:
-                    # For ICLR and NeurIPS, get PDF through OpenReview
-                    openreview_element = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, "a[title='OpenReview']"))
-                    )
-                    openreview_url = openreview_element.get_attribute('href')
-                    if not openreview_url:
-                        continue
-                    
-                    driver.get(openreview_url)
-                    pdf_element = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, "a.citation_pdf_url"))
-                    )
-                    pdf_url = pdf_element.get_attribute('href')
-                    if pdf_url.startswith('/'):
-                        pdf_url = urljoin("https://openreview.net", pdf_url)
+                # Use the retry-enabled helper function
+                title, pdf_url = _get_paper_info(driver, paper_url, conference)
                 
                 # Generate paper ID and store paper info
                 paper_number = paper_url.split('/')[-1]

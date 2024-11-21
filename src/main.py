@@ -6,8 +6,8 @@ import yaml
 import hashlib
 from tqdm import tqdm
 
-from pdf_parser import parse_and_clean_pdf, clean_text
-from pdf_scraper import download_pdf, scrape_openreview, scrape_ai_conference, scrape_cvpr
+from pdf_parser import parse_and_clean_pdf, clean_text, download_pdf
+from pdf_scraper import scrape_openreview, scrape_ai_conference, scrape_cvpr
 from sql import Database, Paper
 from summarizer import summarize_text
 
@@ -35,8 +35,6 @@ def scrape_papers(config):
     # Scrape PDF URLs based on platform
     if platform.lower() == 'openreview':
         papers = scrape_openreview(**config['scraping']['filters'], num_cap=num_cap, max_retries=max_retries)
-    elif platform.lower() == 'txt':
-        papers = scrape_from_txt(**config['scraping']['filters'])
     elif platform.lower() == 'ai_conference':
         papers = scrape_ai_conference(**config['scraping']['filters'], max_papers=num_cap)
     elif platform.lower() == 'cvpr':
