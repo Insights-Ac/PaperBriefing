@@ -6,7 +6,7 @@
       year: 2024
       track: Conference
       submission_type: tab-accept-oral
-    enforce_rescrape: false
+    enforce_rescrape: true
     cap_at: "REFERENCES"
     delay: 1
   
@@ -17,12 +17,10 @@
   summarization:
     provider: openai
     model_name: gpt-4o-mini
-    prefix: "Summarize the following academic paper, and output your summary in the following format: [Topics:] <five keywords describing the main topics of the paper, with commas separating them and relevance descending> [Summary:] <summary as one concise paragraph>"
-    suffix: ""
+    prefix: ""
+    suffix: "Summarize the above academic paper and structure your response in the following format: [Topics:] <Provide five keywords that capture the primary themes or concepts of the paper, listed in descending order of relevance, separated by commas.> [TL;DR:] <Write one concise sentence that encapsulates the paper's main contribution or finding.> [Summary:] <Write one concise paragraph that provides a high-level overview of the paper, focusing on its objective, methods, results, and implications. Ensure your summary reflects the paper's content accurately, without adding interpretations or assumptions. Check your response for clarity, conciseness, and fidelity to the original text.>"
     content_cap: null
-    param:
-      max_tokens: 1000
-      temperature: 0.7
+    param: {}
   
 - name: ICML2024Oral
   scraping:
@@ -32,7 +30,7 @@
       year: 2024
       track: Conference
       submission_type: tab-accept-oral
-    enforce_rescrape: false
+    enforce_rescrape: true
     cap_at: "REFERENCES"
     delay: 1
 
@@ -43,12 +41,10 @@
   summarization:
     provider: openai
     model_name: gpt-4o-mini
-    prefix: "Summarize the following academic paper, and output your summary in the following format: [Topics:] <five keywords describing the main topics of the paper, with commas separating them and relevance descending> [Summary:] <summary as one concise paragraph>"
-    suffix: ""
+    prefix: ""
+    suffix: "Summarize the above academic paper and structure your response in the following format: [Topics:] <Provide five keywords that capture the primary themes or concepts of the paper, listed in descending order of relevance, separated by commas.> [TL;DR:] <Write one concise sentence that encapsulates the paper's main contribution or finding.> [Summary:] <Write one concise paragraph that provides a high-level overview of the paper, focusing on its objective, methods, results, and implications. Ensure your summary reflects the paper's content accurately, without adding interpretations or assumptions. Check your response for clarity, conciseness, and fidelity to the original text.>"
     content_cap: null
-    param:
-      max_tokens: 1000
-      temperature: 0.7
+    param: {}
 
 - name: ICLR2024Oral
   scraping:
@@ -58,7 +54,7 @@
       year: 2024
       track: Conference
       submission_type: tab-accept-oral
-    enforce_rescrape: false
+    enforce_rescrape: true
     cap_at: "REFERENCES"
     delay: 1
   
@@ -69,9 +65,7 @@
   summarization:
     provider: openai
     model_name: gpt-4o-mini
-    prefix: "Summarize the following academic paper, and output your summary in the following format: [Topics:] <five keywords describing the main topics of the paper, with commas separating them and relevance descending> [Summary:] <summary as one concise paragraph>"
-    suffix: ""
+    prefix: ""
+    suffix: "Summarize the above academic paper and structure your response in the following format: [Topics:] <Provide five keywords that capture the primary themes or concepts of the paper, listed in descending order of relevance, separated by commas.> [TL;DR:] <Write one concise sentence that encapsulates the paper's main contribution or finding.> [Summary:] <Write one concise paragraph that provides a high-level overview of the paper, focusing on its objective, methods, results, and implications. Ensure your summary reflects the paper's content accurately, without adding interpretations or assumptions. Check your response for clarity, conciseness, and fidelity to the original text.>"
     content_cap: null
-    param:
-      max_tokens: 1000
-      temperature: 0.7
+    param: {}

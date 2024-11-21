@@ -28,27 +28,28 @@ class MarkdownExporter:
         """Format a single paper into markdown."""
         md_text = f"## {paper.title}\n\n"
         
-        if paper.pdf_url:
-            md_text += f"**Paper URL**: [{paper.pdf_url}]({paper.pdf_url})\n\n"
-        
-        if paper.platform:
-            md_text += f"**Platform**: {paper.platform}\n\n"
-            
         if paper.summary:
             # Split summary into topics and main summary
             clean_summary = paper.summary.replace('**', '').replace('__', '')
             
-            # Extract topics and summary sections
+            # Extract topics, TL;DR, and summary sections
             sections = clean_summary.split('[')
             for section in sections:
                 if section.startswith('Topics:]'):
                     topics = section.replace('Topics:]', '').strip()
                     md_text += "### Topics\n\n"
                     md_text += f"{topics}\n\n"
+                elif section.startswith('TL;DR:]'):
+                    tldr = section.replace('TL;DR:]', '').strip()
+                    md_text += "### TL;DR\n\n"
+                    md_text += f"{tldr}\n\n"
                 elif section.startswith('Summary:]'):
                     summary = section.replace('Summary:]', '').strip()
                     md_text += "### Summary\n\n"
                     md_text += f"{summary}\n\n"
+
+        if paper.pdf_url:
+            md_text += f"**Paper URL**: [{paper.pdf_url}]({paper.pdf_url})\n\n"
         
         md_text += "---\n\n"
         return md_text
@@ -121,11 +122,8 @@ class WebExporter:
         """Format a single paper into HTML using Bootstrap components."""
         html_text = '<div class="col-sm-12 col-lg-6 col-xl-4 mb-4">\n'
         html_text += '<div class="card shadow-sm">\n<div class="card-body">\n'
-        html_text += f'<h3 class="card-title">{paper.title}</h3>\n'
+        html_text += f'<h3 class="card-title h4">{paper.title}</h3>\n'
         
-        if paper.pdf_url:
-            html_text += f'<p class="card-text"><strong>Paper URL:</strong> <a href="{paper.pdf_url}" class="link-primary">{paper.pdf_url}</a></p>\n'
-            
         if paper.summary:
             clean_summary = paper.summary.replace('**', '').replace('__', '')
             sections = clean_summary.split('[')
@@ -141,12 +139,21 @@ class WebExporter:
                         html_text += f'<span class="badge bg-primary">{topic}</span>\n'
                     html_text += '</div>\n'
                     html_text += '</div>\n'
+                elif section.startswith('TL;DR:]'):
+                    tldr = section.replace('TL;DR:]', '').strip()
+                    html_text += '<div class="mb-3">\n'
+                    html_text += '<h3 class="h5">TL;DR</h3>\n'
+                    html_text += f'<p class="card-text">{tldr}</p>\n'
+                    html_text += '</div>\n'
                 elif section.startswith('Summary:]'):
                     summary = section.replace('Summary:]', '').strip()
                     html_text += '<div class="mb-3">\n'
                     html_text += '<h3 class="h5">Summary</h3>\n'
                     html_text += f'<p class="card-text">{summary}</p>\n'
                     html_text += '</div>\n'
+
+        if paper.pdf_url:
+            html_text += f'<p class="card-text"><strong>Paper URL:</strong> <a href="{paper.pdf_url}" class="link-primary">{paper.pdf_url}</a></p>\n'
         
         html_text += '</div>\n</div>\n</div>\n'
         return html_text
