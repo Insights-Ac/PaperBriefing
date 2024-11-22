@@ -46,13 +46,13 @@ def download_pdf(filename, url, output_dir):
         return None
 
 
-def parse_pdf(pdf_path, use_pypdf2=False):
+def parse_pdf(pdf_path, use_pypdf2=True):
     """
     Parse a PDF file into plain text, handling both single-column and double-column layouts.
     Uses pdfminer by default, falls back to OCR for images, and optionally can use PyPDF2.
     
     :param pdf_path: str, path to the PDF file
-    :param use_pypdf2: bool, whether to use PyPDF2 as the first method (default: False)
+    :param use_pypdf2: bool, whether to use PyPDF2 as the first method (default: True)
     :return: str, extracted text from the PDF
     """
     if use_pypdf2:

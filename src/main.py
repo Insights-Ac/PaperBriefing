@@ -49,9 +49,9 @@ def scrape_papers(config):
 
         # Check if the paper already exists in the database
         existing_papers = db.get_papers(filters={'id': paper_id})
-        if existing_papers and existing_papers[0].content:
-            if config['scraping'].get('enforce_rescrape', False):
-                db.delete_paper(existing_papers[0].id)
+        if existing_papers:
+            if config['scraping'].get('enforce_rescrape', False) or not existing_papers[0].content:
+                db.delete_paper(paper_id)
             else:
                 print(f"Skipping {title}, already scraped.")
                 continue
@@ -63,7 +63,7 @@ def scrape_papers(config):
             continue
         
         # Parse and clean PDF
-        raw_content = parse_pdf(pdf_path, use_pypdf2=config['scraping'].get('use_pypdf2', False))
+        raw_content = parse_pdf(pdf_path, use_pypdf2=config['scraping'].get('use_pypdf2', True))
         content = clean_text(raw_content)
 
         # Create or update Paper entry
@@ -79,7 +79,10 @@ def scrape_papers(config):
         )
         
         # Add entry to the database
-        db.add_entry(paper_entry)
+        try:
+            db.add_entry(paper_entry)
+        except Exception as e:
+            print(f"Error adding entry to the database: {e}")
         
         # Delay to avoid overwhelming the server
         time.sleep(config['scraping']['delay'])
