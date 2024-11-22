@@ -6,7 +6,7 @@ import yaml
 import hashlib
 from tqdm import tqdm
 
-from pdf_parser import parse_and_clean_pdf, clean_text, download_pdf
+from pdf_parser import parse_pdf, clean_text, download_pdf
 from pdf_scraper import scrape_openreview, scrape_ai_conference, scrape_cvpr
 from sql import Database, Paper
 from summarizer import summarize_text
@@ -22,7 +22,6 @@ def scrape_papers(config):
     db_path = config['paths']['db_path']
     platform = config['scraping']['platform']
     num_cap = config['scraping'].get('num_cap')
-    max_retries = config['scraping'].get('max_retries', 3)
     
     # Initialize database
     db = Database(db_path)
@@ -34,7 +33,7 @@ def scrape_papers(config):
     
     # Scrape PDF URLs based on platform
     if platform.lower() == 'openreview':
-        papers = scrape_openreview(**config['scraping']['filters'], num_cap=num_cap, max_retries=max_retries)
+        papers = scrape_openreview(**config['scraping']['filters'], num_cap=num_cap)
     elif platform.lower() == 'ai_conference':
         papers = scrape_ai_conference(**config['scraping']['filters'], max_papers=num_cap)
     elif platform.lower() == 'cvpr':
@@ -64,7 +63,8 @@ def scrape_papers(config):
             continue
         
         # Parse and clean PDF
-        content = parse_and_clean_pdf(pdf_path)
+        raw_content = parse_pdf(pdf_path, use_pypdf2=config['scraping'].get('use_pypdf2', False))
+        content = clean_text(raw_content)
 
         # Create or update Paper entry
         paper_entry = Paper(

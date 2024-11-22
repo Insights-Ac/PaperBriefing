@@ -46,49 +46,57 @@ def download_pdf(filename, url, output_dir):
         return None
 
 
-def parse_pdf(pdf_path):
+def parse_pdf(pdf_path, use_pypdf2=False):
     """
     Parse a PDF file into plain text, handling both single-column and double-column layouts.
-    First tries PyPDF2, then falls back to pdfminer, and finally uses OCR for images.
+    Uses pdfminer by default, falls back to OCR for images, and optionally can use PyPDF2.
     
     :param pdf_path: str, path to the PDF file
+    :param use_pypdf2: bool, whether to use PyPDF2 as the first method (default: False)
     :return: str, extracted text from the PDF
     """
+    if use_pypdf2:
+        try:
+            text = ""
+            with open(pdf_path, 'rb') as file:
+                pdf_reader = PyPDF2.PdfReader(file)
+                for page in pdf_reader.pages:
+                    text += page.extract_text()
+            if text.strip():
+                return text
+        except Exception:
+            pass  # Fall through to pdfminer if PyPDF2 fails
+
+    # Try pdfminer first
     try:
         text = ""
-        with open(pdf_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-        if not text.strip():
-            raise Exception("PyPDF2 failed to extract text")
-        return text
+        resource_manager = PDFResourceManager()
+        fake_file_handle = io.StringIO()
+        converter = TextConverter(resource_manager, fake_file_handle, laparams=LAParams())
+        page_interpreter = PDFPageInterpreter(resource_manager, converter)
+        
+        with open(pdf_path, 'rb') as fh:
+            for page in PDFPage.get_pages(fh, caching=True, check_extractable=True):
+                page_interpreter.process_page(page)
+            text = fake_file_handle.getvalue()
+        converter.close()
+        fake_file_handle.close()
+        
+        if text.strip():
+            return text
     except Exception:
-        try:
-            # If PyPDF2 fails, fall back to pdfminer
-            text = ""
-            resource_manager = PDFResourceManager()
-            fake_file_handle = io.StringIO()
-            converter = TextConverter(resource_manager, fake_file_handle, laparams=LAParams())
-            page_interpreter = PDFPageInterpreter(resource_manager, converter)
-            
-            with open(pdf_path, 'rb') as fh:
-                for page in PDFPage.get_pages(fh, caching=True, check_extractable=True):
-                    page_interpreter.process_page(page)
-                text = fake_file_handle.getvalue()
-            converter.close()
-            fake_file_handle.close()
-            
-            if not text.strip():
-                raise Exception("pdfminer failed to extract text")
-            return text
-        except Exception:
-            # If both PyPDF2 and pdfminer fail, use OCR
-            text = ""
-            images = convert_from_path(pdf_path)
-            for image in images:
-                text += pytesseract.image_to_string(image)
-            return text
+        pass
+
+    # If pdfminer fails, use OCR as last resort
+    try:
+        text = ""
+        images = convert_from_path(pdf_path)
+        for image in images:
+            text += pytesseract.image_to_string(image)
+        return text
+    except Exception as e:
+        print(f"All PDF parsing methods failed. Last error: {str(e)}")
+        return ""
 
 
 def clean_text(text):
@@ -104,15 +112,3 @@ def clean_text(text):
     text = ''.join(char for char in text if ord(char) < 128)
         
     return text
-
-
-def parse_and_clean_pdf(pdf_path):
-    """
-    Parse a PDF file, clean the extracted text.
-    
-    :param pdf_path: str, path to the PDF file
-    :return: str, cleaned text
-    """
-    raw_text = parse_pdf(pdf_path)
-    cleaned_text = clean_text(raw_text)
-    return cleaned_text

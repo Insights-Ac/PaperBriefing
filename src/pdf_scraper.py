@@ -84,7 +84,7 @@ def setup_firefox_driver():
         raise
 
 
-def scrape_openreview(conference, year, track, submission_type=None, max_retries=3, num_cap=None):
+def scrape_openreview(conference, year, track, submission_type=None, num_cap=None):
     """
     Scrape OpenReview for PDFs based on given parameters using Selenium with Firefox.
     
@@ -92,7 +92,6 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
     :param year: int, year of the conference
     :param track: str, track name (e.g., 'Poster', 'Oral')
     :param submission_type: str, type of submission
-    :param max_retries: int, maximum number of retries for failed operations
     :param num_cap: int, maximum number of papers to scrape
     :return: list of tuples (paper_title, pdf_url)
     """
@@ -103,9 +102,9 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
     driver = None
     retry_count = 0
     
-    while retry_count < max_retries:
+    while retry_count < 5:
         try:
-            print(f"\nAttempt {retry_count + 1} of {max_retries}")
+            print(f"\nAttempt {retry_count + 1} of 5")
             print(f"Initializing Firefox driver...")
             driver = setup_firefox_driver()
             
@@ -196,7 +195,7 @@ def scrape_openreview(conference, year, track, submission_type=None, max_retries
         except Exception as e:
             print(f"Error during scraping (attempt {retry_count + 1}): {str(e)}")
             retry_count += 1
-            if retry_count < max_retries:
+            if retry_count < 5:
                 print("Retrying...")
                 time.sleep(5)  # Wait before retrying
             else:
@@ -216,8 +215,8 @@ def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, 
     """
     @retry(
         retry=retry_if_exception_type((Exception)),
-        wait=wait_exponential(multiplier=1, min=4, max=60),
-        stop=stop_after_attempt(5)
+        wait=wait_exponential(multiplier=1, min=4, max=30),
+        stop=stop_after_attempt(3)
     )
     def _get_paper_info(driver, paper_url, conference):
         """
