@@ -215,6 +215,12 @@ class WebExporter:
             background-color: #f8f9fa;
             border-radius: 8px;
         }}
+        .pagination-controls {{
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }}
         @media (max-width: 991px) {{
             .search-box {{
                 margin-bottom: 15px;
@@ -246,12 +252,30 @@ class WebExporter:
             </div>
         </div>
 
+        <div class="pagination-controls">
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="itemsPerPage">Items per page:</label>
+                    <select class="form-select form-select-sm" id="itemsPerPage" style="width: auto;">
+                        <option value="6">6</option>
+                        <option value="12" selected>12</option>
+                        <option value="24">24</option>
+                        <option value="48">48</option>
+                    </select>
+                </div>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+
         <div id="papers-container" class="row" data-masonry='{{"percentPosition": true }}'></div>
     </div>
 
     <script>
-        // Store papers data
+        // Store papers data and pagination state
         const papersData = {papers_json};
+        let currentPage = 1;
         
         // Function to filter papers based on search input
         function filterPapers(searchText) {{
@@ -317,13 +341,111 @@ class WebExporter:
             `;
         }}
 
-        // Render papers
+        // Function to create pagination controls
+        function createPagination(totalItems) {{
+            const itemsPerPage = parseInt(document.getElementById('itemsPerPage').value);
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            let paginationHtml = '';
+            
+            // Previous button
+            paginationHtml += `
+                <li class="page-item ${{currentPage === 1 ? 'disabled' : ''}}">
+                    <a class="page-link" href="#" data-page="${{currentPage - 1}}">Previous</a>
+                </li>
+            `;
+            
+            // Page numbers with ellipsis
+            const maxVisiblePages = 5;  // Adjust this number to show more or fewer pages
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            // Adjust startPage if we're near the end
+            if (endPage - startPage + 1 < maxVisiblePages) {{
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }}
+            
+            // First page and ellipsis
+            if (startPage > 1) {{
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="1">1</a>
+                    </li>
+                `;
+                if (startPage > 2) {{
+                    paginationHtml += `
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    `;
+                }}
+            }}
+            
+            // Visible pages
+            for (let i = startPage; i <= endPage; i++) {{
+                paginationHtml += `
+                    <li class="page-item ${{currentPage === i ? 'active' : ''}}">
+                        <a class="page-link" href="#" data-page="${{i}}">${{i}}</a>
+                    </li>
+                `;
+            }}
+            
+            // Last page and ellipsis
+            if (endPage < totalPages) {{
+                if (endPage < totalPages - 1) {{
+                    paginationHtml += `
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    `;
+                }}
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${{totalPages}}">${{totalPages}}</a>
+                    </li>
+                `;
+            }}
+            
+            // Next button
+            paginationHtml += `
+                <li class="page-item ${{currentPage === totalPages ? 'disabled' : ''}}">
+                    <a class="page-link" href="#" data-page="${{currentPage + 1}}">Next</a>
+                </li>
+            `;
+            
+            pagination.innerHTML = paginationHtml;
+            
+            // Add click handlers
+            pagination.querySelectorAll('.page-link').forEach(link => {{
+                link.addEventListener('click', (e) => {{
+                    e.preventDefault();
+                    const newPage = parseInt(e.target.dataset.page);
+                    if (!isNaN(newPage) && newPage >= 1 && newPage <= totalPages) {{
+                        currentPage = newPage;
+                        renderPapers();
+                    }}
+                }});
+            }});
+        }}
+
+        // Render papers with pagination
         function renderPapers() {{
             const searchText = document.getElementById('searchInput').value;
             const filteredPapers = filterPapers(searchText);
+            const itemsPerPage = parseInt(document.getElementById('itemsPerPage').value);
             
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedPapers = filteredPapers.slice(startIndex, endIndex);
+            
+            // Render papers
             const container = document.getElementById('papers-container');
-            container.innerHTML = filteredPapers.map(createPaperCard).join('');
+            container.innerHTML = paginatedPapers.map(createPaperCard).join('');
+            
+            // Create pagination controls
+            createPagination(filteredPapers.length);
             
             // Initialize Masonry layout
             new Masonry(container, {{
@@ -332,7 +454,14 @@ class WebExporter:
         }}
 
         // Add event listeners
-        document.getElementById('searchInput').addEventListener('input', renderPapers);
+        document.getElementById('searchInput').addEventListener('input', () => {{
+            currentPage = 1;  // Reset to first page on search
+            renderPapers();
+        }});
+        document.getElementById('itemsPerPage').addEventListener('change', () => {{
+            currentPage = 1;  // Reset to first page when changing items per page
+            renderPapers();
+        }});
         document.getElementById('showTopics').addEventListener('change', renderPapers);
         document.getElementById('showTldr').addEventListener('change', renderPapers);
         document.getElementById('showSummary').addEventListener('change', renderPapers);

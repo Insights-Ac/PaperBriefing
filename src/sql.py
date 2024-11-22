@@ -12,7 +12,7 @@ class Paper(Base):
 
     id = Column(String, primary_key=True)
     platform = Column(String)
-    # collection = Column(String)
+    collection = Column(String)
     title = Column(String)
 
     pdf_url = Column(String)
