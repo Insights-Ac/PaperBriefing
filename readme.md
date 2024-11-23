@@ -1,8 +1,8 @@
-# PubSummarizer
+# PaperBriefing
 
-The Publication Summarizer is a tool designed to scrape, parse, and summarize academic papers from conferences and journals. This tool downloads the PDFs of papers, extracts text, and generates summaries using various language models.
+PaperBriefing is a tool designed to scrape, parse, summarize academic papers from conferences and journals. This tool downloads the PDFs of papers, extracts text, and generates summaries using various language models. It can also export the results to SQLite database, markdown, and HTML files as a brief overview.
 
-The idea behind this project is to enable a quick review of all the accepted papers from a conference to find papers that are potentially interesting for you to read. Seeing that the number of accepted papers grows so fast, this task is becoming increasingly difficult to do manually.
+The idea behind this project is to enable a quick briefing of all the accepted papers from a conference to find papers that are potentially interesting for you to read. Seeing that the number of accepted papers grows so fast, this task is becoming increasingly difficult to do manually.
 
 ## Modules
 
