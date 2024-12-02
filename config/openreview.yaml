@@ -1,7 +1,7 @@
 - name: "NeurIPS 2024 Oral"
   scraping:
     platform: OpenReview
-    filters:
+    scraper_params:
       conference: NeurIPS.cc
       year: 2024
       track: Conference
@@ -25,7 +25,7 @@
 - name: "ICML 2024 Oral"
   scraping:
     platform: OpenReview
-    filters:
+    scraper_params:
       conference: ICML.cc
       year: 2024
       track: Conference
@@ -49,7 +49,7 @@
 - name: "ICLR 2024 Oral"
   scraping:
     platform: OpenReview
-    filters:
+    scraper_params:
       conference: ICLR.cc
       year: 2024
       track: Conference

@@ -1,7 +1,7 @@
 - name: "CVPR 2024 Oral"
   scraping:
     platform: cvpr
-    filters:
+    scraper_params:
       year: 2024
       filter_name: sessions
       filter_value: Oral

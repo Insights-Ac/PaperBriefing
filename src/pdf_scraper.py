@@ -3,6 +3,7 @@ import subprocess
 import sys
 import time
 
+from tqdm import tqdm
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -84,7 +85,24 @@ def setup_firefox_driver():
         raise
 
 
-def scrape_openreview(conference, year, track, submission_type=None, num_cap=None):
+def setup_chrome_driver():
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    return webdriver.Chrome(options=chrome_options)
+
+
+def setup_driver(browser_name):
+    if browser_name == "firefox":
+        return setup_firefox_driver()
+    elif browser_name == "chrome":
+        return setup_chrome_driver()
+    else:
+        raise ValueError(f"Unsupported browser: {browser_name}")
+
+
+def scrape_openreview(conference, year, track, submission_type=None, num_cap=None, browser_name="firefox"):
     """
     Scrape OpenReview for PDFs based on given parameters using Selenium with Firefox.
     
@@ -106,7 +124,7 @@ def scrape_openreview(conference, year, track, submission_type=None, num_cap=Non
         try:
             print(f"\nAttempt {retry_count + 1} of 5")
             print(f"Initializing Firefox driver...")
-            driver = setup_firefox_driver()
+            driver = setup_driver(browser_name)
             
             print(f"Navigating to URL: {base_url}")
             driver.get(base_url)
@@ -209,7 +227,7 @@ def scrape_openreview(conference, year, track, submission_type=None, num_cap=Non
                     print(f"Error closing driver: {str(e)}")
 
 
-def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, max_papers=None):
+def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, max_papers=None, browser_name="firefox"):
     """
     Scrape papers from the three top AI conference websites (ICLR, ICML, NeurIPS).
     """
@@ -285,16 +303,19 @@ def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, 
             encoded_filter_value = filter_value.replace(' ', '+')
             base_url += f"?filter={filter_name}&search={encoded_filter_value}"
         
-        driver = setup_firefox_driver()
+        driver = setup_driver(browser_name)
         print(f"Fetching papers from {conference}: {base_url}")
         driver.get(base_url)
-        time.sleep(3)  # Wait for dynamic content
+        # Wait for paper links to be present and visible
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href*='poster/']"))
+        )
         
         # Get all paper links from the filtered page
         paper_elements = driver.find_elements(By.CSS_SELECTOR, "a[href*='poster/']")
         paper_links = [elem.get_attribute('href') for elem in paper_elements if elem.get_attribute('href')]
         
-        for paper_url in paper_links:
+        for paper_url in tqdm(paper_links, desc="Fetching paper URLs"):
             try:
                 # Use the retry-enabled helper function
                 title, pdf_url = _get_paper_info(driver, paper_url, conference)
@@ -305,7 +326,6 @@ def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, 
                 
                 papers.append((paper_id, title, pdf_url))
                 paper_count += 1
-                print(f"Found paper {paper_count}: {title}", flush=True)
                 
                 if max_papers and paper_count >= max_papers:
                     return papers
@@ -328,7 +348,7 @@ def scrape_ai_conference(conference, year, filter_name=None, filter_value=None, 
                 print(f"Error closing driver: {str(e)}")
 
 
-def scrape_cvpr(year, filter_name=None, filter_value=None, max_papers=None):
+def scrape_cvpr(year, filter_name=None, filter_value=None, max_papers=None, browser_name="firefox"):
     """
     Scrape papers from the CVPR conference website.
 
@@ -349,7 +369,7 @@ def scrape_cvpr(year, filter_name=None, filter_value=None, max_papers=None):
             encoded_filter_value = filter_value.replace(' ', '+')
             base_url += f"?filter={filter_name}&search={encoded_filter_value}"
         
-        driver = setup_firefox_driver()
+        driver = setup_driver(browser_name)
         print(f"Fetching papers from CVPR: {base_url}")
         driver.get(base_url)
         time.sleep(10)  # Wait for dynamic content

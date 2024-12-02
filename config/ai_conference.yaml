@@ -1,7 +1,7 @@
 - name: "ICML 2024 Posters"
   scraping:
     platform: ai_conference
-    filters:
+    scraper_params:
       conference: ICML
       year: 2024
     enforce_rescrape: false
@@ -23,7 +23,7 @@
 - name: "ICLR 2024 Posters"
   scraping:
     platform: ai_conference
-    filters:
+    scraper_params:
       conference: ICLR
       year: 2024
     enforce_rescrape: false

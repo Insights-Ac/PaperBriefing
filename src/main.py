@@ -12,6 +12,25 @@ from sql import Database, Paper
 from summarizer import summarize_text
 
 
+def get_db_url():
+    """Get database URL from environment variables or config file."""
+    # Priority: Environment variables > Config file
+    db_type = os.getenv('DB_TYPE', 'sqlite')
+    
+    if db_type.lower() == 'postgresql':
+        # PostgreSQL connection parameters
+        host = os.getenv('DB_HOST', 'localhost')
+        port = os.getenv('DB_PORT', '5432')
+        database = os.getenv('DB_NAME', 'papers')
+        user = os.getenv('DB_USER', 'postgres')
+        password = os.getenv('DB_PASSWORD', '')
+        
+        return f'postgresql://{user}:{password}@{host}:{port}/{database}'
+    else:
+        # Default SQLite connection
+        return os.getenv('DB_URL', 'sqlite:///data/papers.db')
+
+
 def scrape_papers(config):
     """Scrape papers and store their content in the database without summarization."""
     name = config.get('name', 'Unnamed config')
@@ -19,9 +38,8 @@ def scrape_papers(config):
     
     # Extract parameters from config
     output_dir = config['paths']['output_dir']
-    db_path = config['paths']['db_path']
+    db_path = config['paths'].get('db_path', get_db_url())
     platform = config['scraping']['platform']
-    num_cap = config['scraping'].get('num_cap')
     
     # Initialize database
     db = Database(db_path)
@@ -33,11 +51,11 @@ def scrape_papers(config):
     
     # Scrape PDF URLs based on platform
     if platform.lower() == 'openreview':
-        papers = scrape_openreview(**config['scraping']['filters'], num_cap=num_cap)
+        papers = scrape_openreview(**config['scraping']['scraper_params'])
     elif platform.lower() == 'ai_conference':
-        papers = scrape_ai_conference(**config['scraping']['filters'], max_papers=num_cap)
+        papers = scrape_ai_conference(**config['scraping']['scraper_params'])
     elif platform.lower() == 'cvpr':
-        papers = scrape_cvpr(**config['scraping']['filters'], max_papers=num_cap)
+        papers = scrape_cvpr(**config['scraping']['scraper_params'])
     else:
         raise ValueError(f"Unsupported platform: {platform}")
     
@@ -94,7 +112,7 @@ def summarize_papers(config):
     print(f"\nSummarizing papers for configuration: {name}", flush=True)
     
     # Initialize database
-    db = Database(config['paths']['db_path'])
+    db = Database(config['paths'].get('db_path', get_db_url()))
     
     # Get papers based on enforce_resummary setting
     if config['summarization'].get('enforce_resummary', False):

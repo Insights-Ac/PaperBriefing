@@ -18,3 +18,4 @@ accelerate
 tenacity
 openai
 anthropic
+psycopg2-binary

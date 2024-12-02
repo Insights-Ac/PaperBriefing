@@ -44,6 +44,12 @@ I recommend using some form of virtual environment to manage the dependencies. Y
 singularity build --nv --fakeroot pubsum.sif pubsum.def
 ```
 
+Alternatively, you can use the Dockerfile to build a Docker container:
+
+```bash
+docker build -t paper-briefing .
+```
+
 ## Usage
 
 Let's assume we want to scrape all ICLR 2024 oral papers and summarize them. 
@@ -102,6 +108,16 @@ For using the Singularity container, you can run:
 
 ```bash
 singularity run --nv pubsum.sif python3 src/main.py -c config.yaml
+```
+
+Or using the Docker container:
+
+```bash
+docker run -it \
+-v $(pwd)/config:/app/config \
+-v $(pwd)/data:/app/data \
+paper-briefing \
+-c /app/config/config.yaml
 ```
 
 This will download the papers, parse the text, and summarize them. The results will be stored in the SQLite database specified in the configuration file.
